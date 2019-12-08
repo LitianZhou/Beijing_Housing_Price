@@ -1,0 +1,438 @@
+---
+title: "House prices in Beijing EDA/ ARIMA"
+output:
+  html_document:
+    toc: yes
+    number_sections : yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
+```
+
+# **Introduction**				
+This is my first stab at a kaggle kernel. The Skyrocketing of housing prices over the last decade in China's megacities have generated broad concerns. The idea behind this project is to have a better understanding on how the prices changed during the past decade and the why behind. 
+
+# **Data cleaning and preparation for analysis**
+
+**Loading Libraries and dependancies*
+```{r message=FALSE, warning=FALSE}
+#Data Manip
+library(tidyverse)
+library(psych)
+library(lubridate)
+library(xts)
+library(tseries)
+library(forecast)
+#Visualisation 
+library(corrplot)
+library(plotly)
+library(viridis)
+library(ggmap)
+library(knitr)
+library(dygraphs)
+library(ggthemes)
+```
+
+
+## **Reading the Data**
+
+Due to the fact that the original csv file includes Chinese characters in the " Floor " column,I try to read it using UTF-8 but that doesn't help, however we can see that the floor number always comes after the space in the UTF encoding. so it's a simple question of extracting the character that comes after the space.
+
+```{r}
+# Due to the fact that the original csv file had some chinese characters  we use latin1 file encoding rather than the default type
+data <- read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>% mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
+```
+after an Initial look at the data. i can see that some variables will add nothing to the analysis so i start by dropping the "URL","ID"
+
+```{r}
+data <- select(data, -url, -id, -Cid)
+glimpse(data)
+summary(data)
+```
+
+## **Missing Data**
+### **Imputation**
+I start by plotting the percentage of the missing data in percent.
+
+```{r}
+# now for an intial exploration of the missing values 
+x1 <- map_df(data, function(x){sum(is.na(x))})
+missing <- x1 %>% gather(key = "Variable") %>% filter(value > 0) %>% mutate(value = value/nrow(data))
+ggplot(missing, aes(x = reorder(Variable, -value),y = value)) + 
+  geom_bar(stat = "identity", fill = "salmon") + 
+  coord_flip()
+```
+Almost half the observations have the feature "DOM" missing which makes it really hard to salvage. 
+
+As we can see, a large part of the feature "Days On Market" is missing. Therefore we are going to impute the missing data. The first step is analyzing the "DOM" feature in order to know which is the best approach to deal with it. 
+
+```{r}
+describe(data$DOM)
+```
+
+As we can see from the feature analysis, we have a skew of **4.36**	which is fairly high. This indicates that the data is positively skewed. This finding can be showcased by the following QQ plot. 
+
+
+```{r}
+qqnorm(data$DOM)
+qqline(data$DOM)
+```
+
+We are going to use the median to impute the data, because the data is positively skewed, 
+
+```{r}
+data$DOM<- ifelse(is.na(data$DOM),median(data$DOM,na.rm=TRUE),data$DOM)
+```
+For the other variables with missing values i decided to just remove them because they account for a really insgnificant part of the data frame
+
+Now we take another look to our plot that showcases missing values. 
+
+```{r}
+x2 <- map_df(data, function(x){sum(is.na(x))})
+missing <- x2 %>% gather(key = "Variable") %>% filter(value > 0) %>% mutate(value = value/nrow(data))
+ggplot(missing, aes(x = reorder(Variable, -value),y = value)) + 
+  geom_bar(stat = "identity", fill = "salmon") + 
+  coord_flip()
+```
+
+Having another look at the missing data, I can see that that we only have Buildingtype and communityaverage with missing percentages of 0.6% and 0.1%, which is rather insignificant. Thus, i am just going to remove these overservations which will leave me with a dataset of 316448 Observations and 24 dimensions
+```{r}
+data1 <- na.omit(data)
+dim(data1)
+```
+### **Levels Assignement** 
+
+I am going to start by assigning levels to the various values in the nominals variables. These levels are directly taken from the descriptive file for this dataset.
+
+**buildingType :including tower( 1 ) , bungalow( 2 ),combination of plate and tower( 3 ), plate( 4 )**
+
+```{r}
+data1 <- data1 %>% 
+  mutate(buildingType = case_when(buildingType == 1 ~ "Tower",
+                                  buildingType == 2 ~ "Bungalow",
+                                  buildingType == 3 ~ "Plate/Tower",
+                                  buildingType == 4 ~ "Plate"))
+
+```
+
+Now we can move on to the other categorical variable to assign a factor to the different values. 
+
+**renovationCondition : including other( 1 ), rough( 2 ),Simplicity( 3 ), hardcover( 4 )**
+```{r}
+data1 <- data1 %>% 
+  mutate(renovationCondition = case_when(renovationCondition == 1 ~ "Other",
+                                         renovationCondition == 2 ~ "Rough",
+                                         renovationCondition == 3 ~ "Simplicity",
+                                         renovationCondition == 4 ~ "Hardcover"))
+```
+
+The next variable that will be considered is "building structure".
+```{r}
+data1 <- data1 %>% 
+  mutate(buildingStructure = case_when(buildingStructure == 1 ~ "Unavailable",
+                                       buildingStructure == 2 ~ "Mixed",
+                                       buildingStructure == 3 ~ "Brick/Wood",
+                                       buildingStructure == 4 ~ "Brick/Concrete",
+                                       buildingStructure == 5 ~ "Steel",
+                                       buildingStructure == 6 ~ "Steel/Concrete"))
+```
+
+**Elevator : 1 if the house has an elevator, 0 otherwise**
+
+```{r}
+data1 <- data1 %>% 
+  mutate(elevator = case_when(elevator == 1 ~ "Has_Elevator",
+                              elevator != 1 ~ "No_elevator"))
+```
+
+**Subway: 1 if the house is close to a subway station, 0 otherwise**
+
+```{r}
+data1 <- data1 %>% 
+  mutate(subway = case_when(subway == 1 ~ "Has_Subway",
+                            subway != 1 ~ "No_Subway"))
+```
+ 
+**fiveYearsProperty: If the owner have the property for less than 5 years**
+
+```{r}
+data1 <- data1 %>% 
+  mutate(fiveYearsProperty = case_when(fiveYearsProperty == 1 ~ "Ownership < 5y",
+                                       fiveYearsProperty != 1 ~ "Ownership > 5y"))
+```
+**Beijing Municipality currently comprises 16 administrative county-level subdivisions including 16 urban, suburban, and rural districts, In this dataset we have 13 distinct districts**
+
+```{r}
+data1 <- data1 %>% 
+  mutate(district = case_when(district == 1 ~ "DongCheng",
+                              district == 2 ~ "FengTai",
+                              district == 3 ~ "DaXing",
+                              district == 4 ~ "FaXing",
+                              district == 5 ~ "FangShang",
+                              # district == 6 ~ "ChangPing",
+                              district == 7 ~ "ChaoYang",
+                              district == 8 ~ "HaiDian",
+                              district == 9 ~ "ShiJingShan",
+                              district == 10 ~ "XiCheng",
+                              district == 11 ~ "TongZhou",
+                              district == 12 ~ "MenTouGou",
+                              district == 13 ~ "ShunYi"))
+```
+
+Now that the categorical variables were assigned the appropriate levels i can convert everything from characters to factors.
+ 
+### **Conversion of variables**
+
+```{r}
+group_categorical <- c("buildingType","renovationCondition", "buildingStructure", "elevator", "subway","district")
+data2 <- data1 %>% mutate_at(group_categorical, as.factor)
+data2$constructionTime <- as.numeric(data1$constructionTime)
+```
+
+Now that all the variables are in the appropriate format. i am going to do another recheck for missing data.
+
+```{r}
+x3 <- map_df(data2, function(x){sum(is.na(x))})
+missing <- x3 %>% gather(key = "Variable") %>% filter(value > 0) %>% mutate(value = value/nrow(data))
+ggplot(missing, aes(x = reorder(Variable, -value),y = value)) + 
+  geom_bar(stat = "identity", fill = "salmon") + 
+  coord_flip()
+summary(data2$constructionTime)
+```
+
+Once again the encoding of the csv seems to cause problems. This conversion brought to light all the values that weren't properly saved in the csv due to the encoding. this will results in the loss of 18747 observation. 
+
+```{r}
+data3 <- na.omit(data2)
+sum(is.na(data3))
+str(data3)
+```
+
+# **Data Exploration**
+
+Now that we have a clean dataset, the data exploration can begin. In this part, we will have a better understading of the data by querying, data visualization, and reporting techniques. These steps include the distribution of the key feature price per square meter, the relationship between pairs or small numbers of features and other methods that will be extensively explained in this step. Once these steps are completed, they will contribute to the data description part and the quality report. 
+In the data exploration report, we will describe our findings of the data exploration and explain the impact on the project. 
+The data exploration distinguishes itself from the data description part by including a more detailed description of the data than the data description report.
+
+### **Target Variable Histogram**
+
+For the initial look at the distribution of the data, a histogram is drawn.
+
+```{r}
+ggplot(data3, aes(price))+geom_histogram(fill = "steelblue")
+```
+As the histogram shows, most of the observations fall into the range of around 20,000 to 60,000 RMB per square meter. The higher the price, the observation frequency smoothly flattens out, ending at 150,000 RMB.
+
+In order to show the overall distribution of observations by their price over quantiles, we draw a Q-Q normal plot and add a qq line to it.
+
+### **Target Variable QQ(Plot/Line)**
+
+```{r}
+qqnorm(data3$price)
+qqline(data3$price)
+```
+
+At the Q-Q Plot the sample quartiles and the theoretical quantiles are plotted against each other. If they both came from the same distribution,we should see the points forming a line that is roughly straight. However, for prices that are far away from the the average price, the plot deviates heavily from the qq line. Especially for high prices a steep slope with a following sharp flattening out can be observed.
+
+## **Numeric Variables**
+### **Mapping Beijing**
+Before digging deeper in the data exploration, it is worth mentioning that our data comes with Longitude and Latitude coordinates. This information will be very helpful to plot the house locations on the map. We will get a new perspective that will provide more information.
+
+The map is being plotted first and stored for later use. 
+
+```{r message=FALSE, warning=FALSE}
+load(file = "./beijing_map.RData",verbose = TRUE)
+beijing
+```
+
+### **Corrplot**
+
+```{r}
+cor_numVar <- cor(select_if(data3, is.numeric) %>% select(-Lng, -Lat), #correlations of all numeric variables
+                  use="all.obs",method="spearman")
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
+```
+
+## **Categorical Variables**
+Now for the coorelation between the categorical variables,I will be using boxplot to showcase how these variables affect our target variable price per square feet.
+
+### **buildingTypes & Target variable Interaction**
+
+```{r}
+ggplot(data3 , aes(x= buildingType, y=price, color = buildingType))+geom_boxplot() + labs(title = "Prices In Function Of The Building Type", y =" Price Per Sqft")
+
+beijing + geom_point(data = data3, aes(Lng, Lat, color = buildingType),size=1.3,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank())
+```
+
+
+* The following boxplots give a good visual representation of how the average house price fluctuates depending on the building type. By looking at the median value (which is the middle stripe in the box) we can clearly see that the bungalow is the most expensive building type on the market. The median is a fairly good measure here because it represents the price for the middle quartile of the data, which means that the middle value is taken of an ordered data set. This means that the value is not that much as the mean would be by a very heavy outlier or mistake. In order to come with robust findings we look at where the middle 50% of the data is situated. This area is called the inter-quartile range. Visually the interquartile range is from the lower part to the upper part of the box. For the building type bungalow, the middle 50% of the data has,for example a price ranging from 85009RMB to 112695RMB. By looking at the complete boxes, again we can come up with the conclusion that bungalows are definitely more expensive than plate and tower building types. Finally, by looking at the boxes of plate, tower and the mixed building type, we cannot see a significant difference. This will be further tested during this analysis with more powerful tests.
+
+* As mentioned in the boxplot interpretation, the bungalows are the most expensive building type. As expected, they can be found in the very centre of the city, right next to TianAnMen and the Forbidden City Palace. The on average lower priced towers and plate/tower mixtures are located are spread not too far around the centre. Low-priced plate building types, on the other hand, are sold from the city centre to the very far outskirts, even past the airport. 
+
+### **BuildingStructure & Target variable Interaction**
+
+```{r}
+ggplot(data3, aes(x= buildingStructure, y=price, color = buildingStructure))+geom_boxplot() + labs(title = "Prices In Function Of The Building Structure", y =" Price Per Sqft")
+
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat, color = buildingStructure),size=1.3,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank()) 
+```
+
+* The boxplots here gives a good visual representation of how the average house price fluctuates depending on the building structure. By looking at the median value we can clearly see that a house build out of brick and wood is more expensive than all the other building structures. In order to come with robust findings. 
+* On first sight, the high occurrence of Steel.Concrete building structures draws my attention. They are densely distributed in the first city circles and become less dense as the city borders are reached. Similarly distributed, but less frequent are Mixed structures. Brick.Concrete assumes the third main structure type, while the remaining four types are very rare or are not even visible.
+
+### **RenovationCondition & Target variable Interaction**
+
+```{r}
+ggplot(data3, aes(x= renovationCondition, y=price, color = renovationCondition))+geom_boxplot() + labs(title = "Prices In Function Of The Renovation Condition", y =" Price Per Sqft")
+
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat, color = renovationCondition),size=1.3,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank()) 
+```
+
+* Looking at the boxplots for the house price for every renovation type, except for others, we can see that the complete boxes have a lot of overlap with each other. That is why it makes sense that there is not much difference between the house prices in terms of renovation condition. 
+
+*The geolocation graph illustrates the high occurrence of simply and hardcover renovations in the inner-city circles. While in the outskirts very few renovations took place, among the renovated houses Hardcover and Simplicity, too, are the most frequent. 
+
+### **Elevator & Target variable Interaction**
+
+```{r}
+ggplot(data3, aes(x= elevator, y=price, color = elevator))+geom_boxplot() + labs(title = "Prices In Function Of The elevator", y =" Price Per Sqft")
+
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat, color = elevator),size=1.3,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank()) 
+```
+### **Subway & Target variable Interaction**
+
+```{r}
+ggplot(data3, aes(x= subway, y=price, color = subway))+geom_boxplot() + labs(title = "Prices In Function Of The subway", y =" Price Per Sqft")
+
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat, color = subway),size=1.3,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank()) 
+```
+
+* An obvious relation can be drawn from the location of houses situated nearby a subway station. As in general, the subway network is denser in the urban area, houses with subway station nearby are mostly spread across the entire urban area. No_Subway houses, which on average have a lower price per square meter, consequently, are more common outside the city centre.
+
+### **FiveYearsProperty & Target variable Interaction**
+
+```{r}
+ggplot(data3, aes(x= fiveYearsProperty, y=price, color = fiveYearsProperty))+geom_boxplot() + labs(title = "Prices In Function Of The five Years Property Variable", y =" Price Per Sqft")
+
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat, color = fiveYearsProperty),size=1.3,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank()) 
+```
+
+As can be seen from the boxplots, prices per square meter are very similar for houses that have been owned for more and less than 5 years. Also, the geographical distribution of these houses is very similar. The only main difference can be seen in the outskirts, where people tend to keep their houses for a longer period (i.e. longer than 5 years).
+
+### **District & Target variable Interaction**
+```{r}
+ggplot(data3, aes(reorder(x= district, -price), y=price, color = district))+geom_boxplot() + labs(title = "Prices In Function Of The District", y =" Price Per Sqft")+coord_flip() 
+
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat, color = district),size=1.2,alpha=1) +theme(axis.title= element_blank(), axis.text =element_blank()) 
+```
+```{r}
+beijing + geom_point(data = data3, aes(data3$Lng, data3$Lat,color=price),size=1.3,alpha=.5)+ scale_color_viridis() 
+```
+The map shows the location, based on latitude and longitude coordinates, of each house in the data. Very visible is the high occurrence of houses priced less than 100.000 RMB per square meter. They be found all over Beijing, except for the very city centre. Located around the TianAnMen are houses with square meter prices above 100.000, as can be seen from the green and light green dots.
+
+# **Time Series Forecasting**
+
+Now that i finished the Exploratory Data Analysis I am going to move on to the machine learning section where i am going to try to predict how the prices are gonna change in the future and the main techniques that i am going to use are  ARIMA
+
+## **Panel Data Transformation and Visualisation**
+
+In this data set we have two variables that represent time data points *"tradeTime"* which represents when the transaction took place and *"constructionTime* which is simply the construction time of the house. I am going to start by converting both to date format. i am also going to introduce new date variables which are simply rounded to the nearest month and also nearest year.
+
+```{r}
+data3$tradeTimeM <- floor_date(data3$tradeTime, unit = "month")
+data3$tradeTimeY <- floor_date(data3$tradeTime, unit = "year")
+data3$constructionTime_date <- ymd(data3$constructionTime, truncated = 2L)
+str(data3)
+```
+
+Alright now that the data is in the right format. we can now plot the data to have a better idea on how the prices changed over time
+
+```{r}
+kable(data3 %>% group_by(tradeTimeY) %>% summarize(n = n()))
+```
+
+As we can see in this table we have observation from all they way back to 2002 however these data points (2002:2009) only account for 6 trades so going forward this analysis will focus on trades done starting 2010.
+
+```{r}
+data3_time1 <- data3 %>%  filter(tradeTimeM >= ymd("2010-01-01") & tradeTimeM < ymd("2018-01-01")) %>% 
+  group_by(tradeTimeM) %>%  
+  summarize(mean = mean(price))
+
+data_xts <- xts(data3_time1[,-1], order.by = data3_time1$tradeTimeM)
+dygraph(data_xts, main = "Sales Count & Price Per Square Meter", 
+        ylab = "Average Monthly Price") %>%
+  dySeries("mean", label = "Mean Price/SQF") %>%
+  dyOptions(stackedGraph = TRUE) %>%
+  dyRangeSelector(height = 20)
+```
+
+As the graph suggests, the decade started with an average house price of around 12,000 RMB. A sharp increase with minor declines can be observed over the course of the following seven years. In 2017, at an average price of more than 70,000 RMB per square meter, a sudden decrease has begun. This might be explained by the Chinese government's experiments aiming to cap the prices on new flats and make renting more lucrative compared to buying homes, so that less new houses with extreme square meter prices will be built. The latter fact also might be a reason for the decreasing number of homes traded in the last two years of the graph.
+*There is a trend component which grows the passenger year by year.
+
+*There looks to be a seasonal component which has a cycle less than 12 months.
+
+*The variance in the data keeps on increasing with time.
+
+## **Buidling The ARIMA model**
+
+I am first going to start by converting the xts data to the time-series format and do some more exploration of the data
+
+```{r}
+data_ts <- ts(data3_time1$mean,start = c(2010, 1),frequency=12)
+data_ts
+ggseasonplot(data_ts,polar=TRUE)
+ggsubseriesplot(data_ts)
+gglagplot(data_ts)
+```
+
+Before diving in the Model building section. i am going to try to break down the theory behind it. ARIMA model is short for  Auto Regressive Integrated Moving Average which is a stochastic sequential model that we can train to forecast future data point. this model can capture complex patterns and relationships as it can combine capturing observation of lagged terms (AR) and error terms of previous periods (MA).
+AR(x) means x lagged error terms are going to be used in the ARIMA model.
+Error terms of previous time points are used to predict current and future point’s observation. Moving average (MA) removes non-determinism or random movements from a time series. MA(x) where x represents previous observations that are used to calculate current observation.
+and finally the "I" in ARIMA. If a trend exists then time series is considered non stationary and shows seasonality. Integrated is a property that reduces seasonality from a time series 
+*P (AutoRegressive), D (Integrated) and Q (Moving Average) are the three properties of ARIMA model. 
+
+#### **Decomposing The time serie**
+```{r}
+decomp = stl(data_ts, s.window="periodic")
+deseasonal_ts <- seasadj(decomp)
+autoplot(decomp)
+```
+
+### **Stationarity**
+Ftting an ARIMA model requires the series to be stationary. 
+In order to fit an ARIMA model. the time serie needs to be stationary, A series is said to be stationary when its mean, variance, and autocovariance are time invariant. This assumption makes intuitive sense: Since ARIMA uses previous lags of series to model its behavior, modeling stable series with consistent properties involves less uncertainty
+
+```{r}
+autoplot(deseasonal_ts)
+adf.test(deseasonal_ts)
+```
+The P-Value is 0.3689 high which means that we fail to reject that null hypothesis therefore the time series is non stationary
+In order to deal with this non stationarity and the trend component i am going to remove unequal variances. by taking the difference of the series. Now, let’s test the resultant series.
+
+```{r}
+final_ts <- diff(deseasonal_ts, d = 1)
+adf.test(final_ts, alternative="stationary")
+```
+There is a slight imporvement but not enough, The P value is still way above the .05 significance level. I am going to do a second order differencing
+```{r}
+final_ts <- diff(deseasonal_ts, d = 2)
+adf.test(final_ts, alternative="stationary")
+```
+We see that the series respect the stationarity assumption needed to build the ARIMA model.
+
+
+### **Fitting the model**
+Now let's fit the model. The forecast package allows the user to explicitly specify the order of the model using the arima() function, or automatically generate a set of optimal (p, d, q) using auto.arima(). This function searches through combinations of order parameters and picks the set that optimizes model fit criteria.
+
+```{r}
+fit <- auto.arima(final_ts)
+summary(fit)
+ggtsdisplay(residuals(fit), main="(0,0,1) Model Residuals")
+fit2 = arima(final_ts, order=c(3,0,3))
+ggtsdisplay(residuals(fit2), main="(3,0,3) Model Residuals")
+fcast <- forecast(fit2, h=12)
+plot(fcast)
+```
+
+To be continued...
+
