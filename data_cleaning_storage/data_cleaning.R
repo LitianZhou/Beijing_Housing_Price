@@ -1,6 +1,7 @@
 # data cleaning file
 # responsible for cleaning data and putting them into database
 library(tidyverse)
+library(RPostgreSQL)
 
 # read in data
 data <- read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>%
@@ -25,21 +26,21 @@ data <- data %>%
                                   buildingType == 2 ~ "Bungalow",
                                   buildingType == 3 ~ "Plate/Tower",
                                   buildingType == 4 ~ "Plate"))
-data$buildingType <- as.factor(data$buildingType)
+# data$buildingType <- as.factor(data$buildingType)
 data <- data %>% 
-  mutate(renovationCondition = case_when(renovationCondition == 1 ~ "Other",
+  mutate(renovationCondition = case_when(renovationCondition == 1 ~ "A_Other",
                                          renovationCondition == 2 ~ "Rough",
                                          renovationCondition == 3 ~ "Simplicity",
                                          renovationCondition == 4 ~ "Hardcover"))
-data$renovationCondition <- as.factor(data$renovationCondition)
+# data$renovationCondition <- as.factor(data$renovationCondition)
 data <- data %>% 
-  mutate(buildingStructure = case_when(buildingStructure == 1 ~ "Unavailable",
+  mutate(buildingStructure = case_when(buildingStructure == 1 ~ "A_Unavailable",
                                        buildingStructure == 2 ~ "Mixed",
                                        buildingStructure == 3 ~ "Brick/Wood",
                                        buildingStructure == 4 ~ "Brick/Concrete",
                                        buildingStructure == 5 ~ "Steel",
                                        buildingStructure == 6 ~ "Steel/Concrete")) 
-data$buildingStructure <- as.factor(data$buildingStructure)
+# data$buildingStructure <- as.factor(data$buildingStructure)
 
 # Both 3 and 4 are DaXing District
 data <- data %>% 
@@ -56,4 +57,23 @@ data <- data %>%
                               district == 11 ~ "TongZhou",
                               district == 12 ~ "MenTouGou",
                               district == 13 ~ "ShunYi"))
-data$district <- as.factor(data$district)
+# data$district <- as.factor(data$district)
+
+# insert into database
+pg = dbDriver("PostgreSQL")
+
+endpoint <- 'beijing-housing.copmdh9kwiqr.us-east-2.rds.amazonaws.com'
+portnum <- 5432
+username <- 'biostat625'
+dbname <- 'housing'
+pwd <- 'shinygroup2'
+
+# connect to database
+con = dbConnect(pg, user=username, password='shinygroup2',
+                host=endpoint, port=5432, dbname="housing")
+
+
+dbWriteTable(con, 'housing', data, row.names=FALSE)
+
+# disconnect from database
+dbDisconnect(con)
