@@ -1,44 +1,37 @@
-
-ui <- fluidPage(google_mapOutput("map"))
-
-server <- function(input, output, session){
-  
-  api_key <- "AIzaSyACIYNuS69B_KiHLEBslcsiL08kcgWez6E"
-  
-  output$map <- renderGoogle_map({
-    google_map(key = api_key)
-  })
-}
-
-shinyApp(ui, server)
-
-## using split view
-
-library(shinydashboard)
 library(googleway)
+library(tidyverse)
+library(magrittr)
+library(shiny)
 
-ui <- dashboardPage(
-  
-  dashboardHeader(),
-  dashboardSidebar(),
-  dashboardBody(
-    box(width = 6,
-        google_mapOutput(outputId = "map")
-    ),
-    box(width = 6,
-        google_mapOutput(outputId = "pano")
+ui = fluidPage(
+  fluidPage(
+    titlePanel("Interactive Map"),
+    sidebarLayout(
+      sidebarPanel(),
+      mainPanel()
     )
-  )
+  ),
+  google_mapOutput("map")
 )
 
-server <- function(input, output) {
-  set_key("your_api_key")
+server = function(input, output, session){
   
-  output$map <- renderGoogle_map({
-    google_map(location = c(-37.817386, 144.967463),
-               zoom = 10,
-               split_view = "pano")
+  api_key = "AIzaSyACIYNuS69B_KiHLEBslcsiL08kcgWez6E"
+  
+  # draw markers (houses) on map
+  data <- read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>% mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
+  data <- select(data, -url, -id, -Cid)
+  data$info <- paste0("<b>Total price: </b>", data$totalPrice)
+  
+  output$map = renderGoogle_map({
+    house_locations = as.data.frame(cbind(data$Lat, data$Lng))
+    google_map(key = map_key, data = head(house_locations), location = c(39.9, 116.4), zoom = 12) %>%
+      add_markers(lat = "V1", lon = "V2")
   })
 }
 
+
+
 shinyApp(ui, server)
+
+

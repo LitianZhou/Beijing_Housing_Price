@@ -7,7 +7,6 @@ data <- read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>%
   mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
 
 # I remove DOM because there are too many missing values
-# FIXME: Can I remove DOM?
 data <- select(data, -url, -id, -Cid, -DOM)
 
 # Coerce floor from string to integer

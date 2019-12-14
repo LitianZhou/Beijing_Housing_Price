@@ -78,33 +78,20 @@ qqnorm(data$DOM)
 qqline(data$DOM)
 ```
 
-We are going to use the median to impute the data, because the data is positively skewed, 
+We are going to omit the DOM variable, because the data is positively skewed, 
 
-```{r}
-data$DOM<- ifelse(is.na(data$DOM),median(data$DOM,na.rm=TRUE),data$DOM)
-```
 For the other variables with missing values i decided to just remove them because they account for a really insgnificant part of the data frame
 
-Now we take another look to our plot that showcases missing values. 
-
+We can see that that we only have Buildingtype and communityaverage with missing percentages of 0.6% and 0.1%, which is rather insignificant. Removing these overservations which will leave me with a dataset of 316448 Observations and 24 dimensions
 ```{r}
-x2 <- map_df(data, function(x){sum(is.na(x))})
-missing <- x2 %>% gather(key = "Variable") %>% filter(value > 0) %>% mutate(value = value/nrow(data))
-ggplot(missing, aes(x = reorder(Variable, -value),y = value)) + 
-  geom_bar(stat = "identity", fill = "salmon") + 
-  coord_flip()
-```
-
-Having another look at the missing data, I can see that that we only have Buildingtype and communityaverage with missing percentages of 0.6% and 0.1%, which is rather insignificant. Thus, i am just going to remove these overservations which will leave me with a dataset of 316448 Observations and 24 dimensions
-```{r}
-data1 <- na.omit(data)
+data1 <- na.omit(data[,-4])
 dim(data1)
 ```
 ### **Levels Assignement** 
 
 I am going to start by assigning levels to the various values in the nominals variables. These levels are directly taken from the descriptive file for this dataset.
 
-**buildingType :including tower( 1 ) , bungalow( 2 ),combination of plate and tower( 3 ), plate( 4 )**
+**buildingType :including tower( 1 ) , bungalow( 2 ), combination of plate and tower( 3 ), plate( 4 )**
 
 ```{r}
 data1 <- data1 %>% 
@@ -117,7 +104,7 @@ data1 <- data1 %>%
 
 Now we can move on to the other categorical variable to assign a factor to the different values. 
 
-**renovationCondition : including other( 1 ), rough( 2 ),Simplicity( 3 ), hardcover( 4 )**
+**renovation Condition : including other( 1 ), rough( 2 ),Simplicity( 3 ), hardcover( 4 )**
 ```{r}
 data1 <- data1 %>% 
   mutate(renovationCondition = case_when(renovationCondition == 1 ~ "Other",
@@ -167,9 +154,9 @@ data1 <- data1 %>%
   mutate(district = case_when(district == 1 ~ "DongCheng",
                               district == 2 ~ "FengTai",
                               district == 3 ~ "DaXing",
-                              district == 4 ~ "FaXing",
-                              district == 5 ~ "FangShang",
-                              # district == 6 ~ "ChangPing",
+                              district == 4 ~ "XuanWu",
+                              district == 5 ~ "FangShan",
+                              district == 6 ~ "ChangPing",
                               district == 7 ~ "ChaoYang",
                               district == 8 ~ "HaiDian",
                               district == 9 ~ "ShiJingShan",
@@ -228,8 +215,8 @@ In order to show the overall distribution of observations by their price over qu
 ### **Target Variable QQ(Plot/Line)**
 
 ```{r}
-qqnorm(data3$price)
-qqline(data3$price)
+#qqnorm(data3$price)
+#qqline(data3$price)
 ```
 
 At the Q-Q Plot the sample quartiles and the theoretical quantiles are plotted against each other. If they both came from the same distribution,we should see the points forming a line that is roughly straight. However, for prices that are far away from the the average price, the plot deviates heavily from the qq line. Especially for high prices a steep slope with a following sharp flattening out can be observed.
@@ -359,7 +346,7 @@ data3_time1 <- data3 %>%  filter(tradeTimeM >= ymd("2010-01-01") & tradeTimeM < 
   summarize(mean = mean(price))
 
 data_xts <- xts(data3_time1[,-1], order.by = data3_time1$tradeTimeM)
-dygraph(data_xts, main = "Sales Count & Price Per Square Meter", 
+dygraph(data_xts, main = "TradeTime Versus Price Per Square Meter", 
         ylab = "Average Monthly Price") %>%
   dySeries("mean", label = "Mean Price/SQF") %>%
   dyOptions(stackedGraph = TRUE) %>%
