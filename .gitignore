@@ -2,12 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
-<<<<<<< HEAD
 new.csv
 house-prices-in-beijing-eda-arima.Rmd
 test.R
 price_district.Rmd
-=======
 *.csv
-
->>>>>>> cdc4914bab38e82b5ea4ce2181f380fd5a8d0ac8
