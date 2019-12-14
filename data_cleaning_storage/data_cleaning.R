@@ -27,13 +27,13 @@ data <- data %>%
                                   buildingType == 4 ~ "Plate"))
 data$buildingType <- as.factor(data$buildingType)
 data <- data %>% 
-  mutate(renovationCondition = case_when(renovationCondition == 1 ~ "Other",
+  mutate(renovationCondition = case_when(renovationCondition == 1 ~ "A_Other",
                                          renovationCondition == 2 ~ "Rough",
                                          renovationCondition == 3 ~ "Simplicity",
                                          renovationCondition == 4 ~ "Hardcover"))
 data$renovationCondition <- as.factor(data$renovationCondition)
 data <- data %>% 
-  mutate(buildingStructure = case_when(buildingStructure == 1 ~ "Unavailable",
+  mutate(buildingStructure = case_when(buildingStructure == 1 ~ "A_Unavailable",
                                        buildingStructure == 2 ~ "Mixed",
                                        buildingStructure == 3 ~ "Brick/Wood",
                                        buildingStructure == 4 ~ "Brick/Concrete",
