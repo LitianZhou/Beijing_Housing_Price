@@ -5,9 +5,22 @@ library(shiny)
 
 ui = fluidPage(
   fluidPage(
-    titlePanel("Interactive Map"),
+    titlePanel("Houses on Market"),
     sidebarLayout(
-      sidebarPanel(),
+      sidebarPanel(
+        selectInput(
+          "district_fit", "Fit by distric?",
+          c(Yes = "yes", No = "no"),
+          selected = "yes"
+        ),
+        conditionalPanel(
+          condition = "input.region_fit == 'yes'",
+          selectInput(
+            "district", "District",
+            c("Chao Yang", "Hai Dian", "Dong Cheng")
+          )
+        )
+      ),
       mainPanel()
     )
   ),
@@ -19,8 +32,6 @@ server = function(input, output, session){
   api_key = "AIzaSyACIYNuS69B_KiHLEBslcsiL08kcgWez6E"
   
   # draw markers (houses) on map
-  data <- read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>% mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
-  data <- select(data, -url, -id, -Cid)
   data$info <- paste0("<b>Total price: </b>", data$totalPrice)
   
   output$map = renderGoogle_map({
