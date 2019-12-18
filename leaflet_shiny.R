@@ -1,9 +1,11 @@
-library(googleway)
-library(tidyverse)
 library(magrittr)
 library(shiny)
+library(leaflet)
 
-ui = fluidPage(
+r_colors <- rgb(t(col2rgb(colors()) / 255))
+names(r_colors) <- colors()
+
+ui <- fluidPage(
   fluidPage(
     titlePanel("Houses on Market"),
     sidebarLayout(
@@ -24,25 +26,27 @@ ui = fluidPage(
       mainPanel()
     )
   ),
-  google_mapOutput("map")
+  leafletOutput("mymap"),
+  p(),
+  actionButton("recalc", "back")
 )
 
-server = function(input, output, session){
+server <- function(input, output, session) {
   
-  api_key = "AIzaSyACIYNuS69B_KiHLEBslcsiL08kcgWez6E"
+  points <- eventReactive(input$recalc, {
+    cbind(data$Lng[1:100], data$Lat[1:100])
+  }, ignoreNULL = FALSE)
   
-  # draw markers (houses) on map
-  data$info <- paste0("<b>Total price: </b>", data$totalPrice)
-  
-  output$map = renderGoogle_map({
-    house_locations = as.data.frame(cbind(data$Lat, data$Lng))
-    google_map(key = map_key, data = head(house_locations), location = c(39.9, 116.4), zoom = 12) %>%
-      add_markers(lat = "V1", lon = "V2")
+  output$mymap <- renderLeaflet({
+    leaflet() %>%
+      addProviderTiles(providers$OpenStreetMap.Mapnik,
+                       options = providerTileOptions(noWrap = TRUE)
+      ) %>%
+      addMarkers(data = points())
   })
 }
 
-
-
 shinyApp(ui, server)
+
 
 
