@@ -26,13 +26,13 @@ data <- data %>%
                                   buildingType == 2 ~ "Bungalow",
                                   buildingType == 3 ~ "Plate/Tower",
                                   buildingType == 4 ~ "Plate"))
-# data$buildingType <- as.factor(data$buildingType)
+data$buildingType <- as.factor(data$buildingType)
 data <- data %>% 
   mutate(renovationCondition = case_when(renovationCondition == 1 ~ "A_Other",
                                          renovationCondition == 2 ~ "Rough",
                                          renovationCondition == 3 ~ "Simplicity",
                                          renovationCondition == 4 ~ "Hardcover"))
-# data$renovationCondition <- as.factor(data$renovationCondition)
+data$renovationCondition <- as.factor(data$renovationCondition)
 data <- data %>% 
   mutate(buildingStructure = case_when(buildingStructure == 1 ~ "A_Unavailable",
                                        buildingStructure == 2 ~ "Mixed",
@@ -40,7 +40,7 @@ data <- data %>%
                                        buildingStructure == 4 ~ "Brick/Concrete",
                                        buildingStructure == 5 ~ "Steel",
                                        buildingStructure == 6 ~ "Steel/Concrete")) 
-# data$buildingStructure <- as.factor(data$buildingStructure)
+data$buildingStructure <- as.factor(data$buildingStructure)
 
 # Both 3 and 4 are DaXing District
 data <- data %>% 
@@ -57,7 +57,7 @@ data <- data %>%
                               district == 11 ~ "TongZhou",
                               district == 12 ~ "MenTouGou",
                               district == 13 ~ "ShunYi"))
-# data$district <- as.factor(data$district)
+data$district <- as.factor(data$district)
 
 # insert into database
 pg = dbDriver("PostgreSQL")
@@ -72,8 +72,9 @@ pwd <- 'shinygroup2'
 con = dbConnect(pg, user=username, password='shinygroup2',
                 host=endpoint, port=5432, dbname="housing")
 
+names(data) = tolower(names(data))
 
-dbWriteTable(con, 'housing', data, row.names=FALSE)
+dbWriteTable(con, 'housing', data, row.names=FALSE, overwrite=TRUE)
 
 # disconnect from database
 dbDisconnect(con)

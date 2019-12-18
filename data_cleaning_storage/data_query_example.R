@@ -16,11 +16,23 @@ con = dbConnect(pg, user=username, password=pwd,
 
 # next is some query examples
 
-## query all the data
-alldata = dbGetQuery(con, "SELECT buildingstructure FROM housing;")
+## query single variable
+singlevar = dbGetQuery(con, "SELECT buildingstructure FROM housing;")
 
-## query longitude and latitude
-geographical= dbGetQuery(con, 'SELECT lng,lat FROM housing;')
+## query multiple variables
+multivar= dbGetQuery(con, 'SELECT lng,lat,totalprice FROM housing;')
+
+## query based on conditions (numeric values)
+numericcondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure FROM housing
+                       WHERE totalprice > 300 AND totalprice < 1000;")
+
+## query based on conditions (string values)
+stringcondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure,district FROM housing
+                       WHERE district IN ('HaiDian', 'ChaoYang') ORDER BY totalprice DESC;")
 
 
-structure = dbGetQuery(con, "SELECT buildingstructure FROM housing;")
+## query based on conditions (dates)
+datecondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure,tradetime FROM housing
+                       WHERE tradetime>='2015-01-01' and tradetime <'2016-12-31' ORDER BY tradetime DESC, totalprice DESC;")
+
+dbDisconnect(con)
