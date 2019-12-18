@@ -36,20 +36,20 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  points <- eventReactive(input$resample, {
+  house_subset <- eventReactive(input$resample, {
     set.seed(625)
     sample_houses = sample(1:30000, 100)
     cbind(data$Lng[sample_houses], data$Lat[sample_houses])
   }, ignoreNULL = FALSE)
   
-  output$points <- renderDataTable(points())
+  output$house_subset <- renderDataTable(house_subset())
   
   output$mymap <- renderLeaflet({
     leaflet() %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik,
                        options = providerTileOptions(noWrap = TRUE)
       ) %>%
-      addMarkers(data = points())
+      addMarkers(data = house_subset())
   })
 }
 
