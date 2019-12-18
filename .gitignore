@@ -2,5 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+new.csv
+house-prices-in-beijing-eda-arima.Rmd
+test.R
+price_district.Rmd
 *.csv
-
