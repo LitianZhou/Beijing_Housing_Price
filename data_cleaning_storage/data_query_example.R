@@ -37,7 +37,7 @@ datecondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure,tra
 
 gen_data = function(district, bdtypes){
   querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, \
-            elevator, subway, district FROM housing %s;"
+            elevator, subway, district, season FROM housing %s;"
   
   finalconstraint = ""
   disconstraint = ""
