@@ -68,16 +68,15 @@ server = function(input, output, session) {
   # TODO: generate subset of data for map(random sample)
   #input$
   
-  
   output$mymap = renderLeaflet({
-    leaflet(points()) %>%
-      addProviderTiles(providers$OpenStreetMap.Mapnik,
-                       options = providerTileOptions(noWrap = TRUE)
-      ) %>%
-      addMarkers(~lng, ~lat)
+    data_sub = points()
+    data_sub$popup_content = data_sub[,5]
+    data_sub %>% leaflet() %>% addProviderTiles(providers$OpenStreetMap.DE) %>%
+      addMarkers(~lng, ~lat, popup = ~htmlEscape(popup_content))
   })
   
   output$district_filter = renderText({
+    print(input$district)
     points() %>% summary()
   })
 }
