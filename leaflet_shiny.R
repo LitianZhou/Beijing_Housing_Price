@@ -50,6 +50,7 @@ server = function(input, output, session) {
   
   # querydata = reactiveVal(info$data)
   
+  # query raw data only based on district and buildingtype
   points = eventReactive(input$resample, {
     info = gen_data(input$district, input$building_type)
     print("query data")
@@ -57,24 +58,28 @@ server = function(input, output, session) {
     # TODO: fit the model here
     sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 300))
     data_sub <- info$data[sample_houses,]
+    # data_sub$popup_content = data_sub[,5]
     return(data_sub)
   })
+  
+  
+  # TODO: generate subset of data for histogram (based on price range and squares elevator subway)
+  
+  # TODO: generate subset of data for map(random sample)
   #input$
   
-  data_sub$popup_content = data_sub[,5]
+  
   output$mymap = renderLeaflet({
-    leaflet(data_sub) %>%
+    leaflet(points()) %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik,
                        options = providerTileOptions(noWrap = TRUE)
       ) %>%
-      addMarkers(~lng, ~lat, popup = ~htmlEscape(popup_content))
+      addMarkers(~lng, ~lat)
   })
   
   output$district_filter = renderText({
-    data_sub %>% summary()
+    points() %>% summary()
   })
-  
-  
 }
 
 shinyApp(ui, server)
