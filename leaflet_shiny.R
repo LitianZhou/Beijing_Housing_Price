@@ -27,12 +27,11 @@ ui = fluidPage(
                            inline = FALSE),
         checkboxInput(inputId = "has_elevator", label="elevator", value = FALSE),
         checkboxInput(inputId = "has_subway", label="subway", value = FALSE),
-        submitButton("apply filter", icon("refresh"))
+        actionButton(inputId ="resample", label = "refresh")
       ),
       mainPanel(
         leafletOutput("mymap"),
         p(),
-        actionButton(inputId ="resample", label = "refresh"),
         textOutput(outputId = "district_filter", inline = TRUE)
       )
     )
@@ -42,23 +41,23 @@ ui = fluidPage(
 library(htmltools)
 server = function(input, output, session) {
   points = eventReactive(input$resample, {
-    sample_houses = sample(1:nrow(data), 300)
+    sample_houses = sample(1:nrow(data), 150)
+    print(sample_houses)
     data_sub = data[sample_houses,]
-  }, ignoreNULL = FALSE)
-  #input$
+    return(data_sub)
+  }, ignoreNULL = TRUE)
   
-  data_sub$popup_content = data_sub[,5]
+  
   output$mymap = renderLeaflet({
-    leaflet(data_sub) %>%
-      addProviderTiles(providers$OpenStreetMap.Mapnik,
-                       options = providerTileOptions(noWrap = TRUE)
-      ) %>%
+    data_sub = points()
+    data_sub$popup_content = data_sub[,5]
+    data_sub %>% leaflet() %>% addProviderTiles(providers$OpenStreetMap.DE) %>%
       addMarkers(~lng, ~lat, popup = ~htmlEscape(popup_content))
   })
   
   output$district_filter = renderText({
     print(input$district)
-    data_sub %>% filter(district == input$district) %>% summary()
+    data %>% filter(district == input$district) %>% summary()
   })
 }
 
