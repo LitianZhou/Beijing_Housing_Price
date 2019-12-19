@@ -7,8 +7,8 @@ library(dplyr)
 source("data_cleaning_storage/data_query_example.R")
 
 # generate initial data
-info = gen_data("ChaoYang", c())
-sample_houses = sample(1:nrow(info$data), 300)
+info = gen_data("all", c())
+sample_houses = sample(1:nrow(info$data), 100)
 data_sub = info$data[sample_houses,]
 
 
@@ -24,8 +24,10 @@ ui = fluidPage(
                     max = 10000, value = c(100, 6000)),
         selectInput(
           inputId = "district", label = "district",
-          c("all", "ChaoYang", "HaiDian", "DongCheng"),
-          selected = "ChaoYang"
+          c("all", "ChangPing","ChaoYang", "DaXing", "DongCheng", "FangShan",
+            "FengTai", "HaiDian", "MenTouGou", "ShiJingShan", "ShunYi", "TongZhou",
+            "XiCheng"),
+          selected = "all"
         ),
         checkboxGroupInput(inputId = "building_type", label = "building type",
                            choices = c("Tower","Plate", "Plate/Tower"),
@@ -38,7 +40,8 @@ ui = fluidPage(
       mainPanel(
         leafletOutput("mymap"),
         p(),
-        textOutput(outputId = "district_filter", inline = TRUE)
+        textOutput(outputId = "district_filter", inline = TRUE),
+        plotOutput(outputId = "histogram", height = 200)
       )
     )
   )
@@ -56,9 +59,8 @@ server = function(input, output, session) {
     print("query data")
     # querydata(newinfo$data)
     # TODO: fit the model here
-    sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 300))
+    sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 100))
     data_sub <- info$data[sample_houses,]
-    # data_sub$popup_content = data_sub[,5]
     return(data_sub)
   })
   
@@ -77,7 +79,13 @@ server = function(input, output, session) {
   
   output$district_filter = renderText({
     print(input$district)
-    points() %>% summary()
+    #points() %>% summary()
+  })
+  
+  output$histogram = renderPlot({
+    data_sub = points()
+    ggplot(data_sub  %>% filter(elevator==0 & subway==0), aes(x=totalprice)) +
+      geom_histogram(bins = 70)
   })
 }
 
