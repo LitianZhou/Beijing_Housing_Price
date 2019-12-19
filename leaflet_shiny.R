@@ -8,48 +8,57 @@ library(leaflet)
 # run data cleaning code here
 
 
-ui <- fluidPage(
+ui = fluidPage(
   fluidPage(
     titlePanel("Houses on Market"),
     sidebarLayout(
       sidebarPanel(
+        sliderInput("price_range", label = h5("price range"), min = 100000, 
+                    max = 1000000, value = c(400000, 600000)),
+        sliderInput("square_range", label = h5("square"), min = 30, 
+                    max = 10000, value = c(100, 6000)),
         selectInput(
-          "district_fit", "Fit by distric?",
-          c(Yes = "yes", No = "no"),
-          selected = "no"
+          inputId = "district", label = "district",
+          c("all", "ChaoYang", "HaiDian", "DongCheng"),
+          selected = "ChaoYang"
         ),
-        conditionalPanel(
-          condition = "input.district_fit == 'yes'",
-          selectInput(
-            "district", "District",
-            c("Chao Yang", "Hai Dian", "Dong Cheng")
-          )
-        )
+        checkboxGroupInput(inputId = "building_type", label = "building type",
+                           choices = c("tower","plate", "plate/tower"),
+                           inline = FALSE),
+        checkboxInput(inputId = "has_elevator", label="elevator", value = FALSE),
+        checkboxInput(inputId = "has_subway", label="subway", value = FALSE),
+        submitButton("apply filter", icon("refresh"))
       ),
-      mainPanel()
+      mainPanel(
+        leafletOutput("mymap"),
+        p(),
+        actionButton(inputId ="resample", label = "refresh"),
+        textOutput(outputId = "district_filter", inline = TRUE)
+      )
     )
-  ),
-  leafletOutput("mymap"),
-  p(),
-  actionButton("resample", "resample")
+  )
 )
 
-server <- function(input, output, session) {
-  
-  house_subset <- eventReactive(input$resample, {
-    set.seed(625)
-    sample_houses = sample(1:30000, 100)
-    cbind(data$Lng[sample_houses], data$Lat[sample_houses])
+library(htmltools)
+server = function(input, output, session) {
+  points = eventReactive(input$resample, {
+    sample_houses = sample(1:nrow(data), 300)
+    data_sub = data[sample_houses,]
   }, ignoreNULL = FALSE)
+  #input$
   
-  output$house_subset <- renderDataTable(house_subset())
-  
-  output$mymap <- renderLeaflet({
-    leaflet() %>%
+  data_sub$popup_content = data_sub[,5]
+  output$mymap = renderLeaflet({
+    leaflet(data_sub) %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik,
                        options = providerTileOptions(noWrap = TRUE)
       ) %>%
-      addMarkers(data = house_subset())
+      addMarkers(~lng, ~lat, popup = ~htmlEscape(popup_content))
+  })
+  
+  output$district_filter = renderText({
+    print(input$district)
+    data_sub %>% filter(district == input$district) %>% summary()
   })
 }
 
