@@ -1,71 +1,80 @@
 library(magrittr)
 library(shiny)
 library(leaflet)
+library(dplyr)
 
-#data = read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>% 
-#  mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
+# generate the connection object
+source("data_cleaning_storage/data_query_example.R")
 
-# run data cleaning code here
-# load the database handler
-library(RPostgreSQL)
+# generate initial data
+info = gen_data("ChaoYang", c())
+sample_houses = sample(1:nrow(info$data), 300)
+data_sub = info$data[sample_houses,]
 
-# parameters for connecting to database
-pg = dbDriver("PostgreSQL")
 
-endpoint <- 'beijing-housing.copmdh9kwiqr.us-east-2.rds.amazonaws.com'
-portnum <- 5432
-username <- 'biostat625'
-pwd <- 'shinygroup2'
-
-# set up connection object
-con = dbConnect(pg, user=username, password=pwd,
-                host=endpoint, port=portnum, dbname='housing')
-
-# query all the data for now
-data = dbGetQuery(con, "SELECT * FROM housing WHERE district = 'ShunYi';")
-
-ui <- fluidPage(
+# define the interface appearance
+ui = fluidPage(
   fluidPage(
     titlePanel("Houses on Market"),
     sidebarLayout(
       sidebarPanel(
+        sliderInput("price_range", label = h5("price range"), min = 100000, 
+                    max = 1000000, value = c(400000, 600000)),
+        sliderInput("square_range", label = h5("square"), min = 30, 
+                    max = 10000, value = c(100, 6000)),
         selectInput(
-          "district_fit", "Fit by distric?",
-          c(Yes = "yes", No = "no"),
-          selected = "no"
+          inputId = "district", label = "district",
+          c("all", "ChaoYang", "HaiDian", "DongCheng"),
+          selected = "ChaoYang"
         ),
-        conditionalPanel(
-          condition = "input.district_fit == 'yes'",
-          selectInput(
-            "district", "District",
-            c("Chao Yang", "Hai Dian", "Dong Cheng")
-          )
-        )
+        checkboxGroupInput(inputId = "building_type", label = "building type",
+                           choices = c("Tower","Plate", "Plate/Tower"),
+                           selected = c("Tower","Plate", "Plate/Tower"),
+                           inline = FALSE),
+        checkboxInput(inputId = "has_elevator", label="elevator", value = FALSE),
+        checkboxInput(inputId = "has_subway", label="subway", value = FALSE),
+        actionButton(inputId ="resample", label = "refresh")
       ),
-      mainPanel()
+      mainPanel(
+        leafletOutput("mymap"),
+        p(),
+        textOutput(outputId = "district_filter", inline = TRUE)
+      )
     )
-  ),
-  leafletOutput("mymap"),
-  p(),
-  actionButton("resample", "resample")
+  )
 )
 
-server <- function(input, output, session) {
+
+library(htmltools)
+server = function(input, output, session) {
   
-  house_subset <- eventReactive(input$resample, {
-    sample_houses = sample(1:30000, 100)
-    cbind(data$lng[sample_houses], data$lat[sample_houses])
-  }, ignoreNULL = FALSE)
+  # querydata = reactiveVal(info$data)
   
-  output$house_subset <- renderDataTable(house_subset())
+  points = eventReactive(input$resample, {
+    info = gen_data(input$district, input$building_type)
+    print("query data")
+    # querydata(newinfo$data)
+    # TODO: fit the model here
+    sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 300))
+    data_sub <- info$data[sample_houses,]
+    return(data_sub)
+  })
+  #input$
   
-  output$mymap <- renderLeaflet({
-    leaflet() %>%
+  data_sub$popup_content = data_sub[,5]
+  output$mymap = renderLeaflet({
+    leaflet(data_sub) %>%
       addProviderTiles(providers$OpenStreetMap.Mapnik,
                        options = providerTileOptions(noWrap = TRUE)
       ) %>%
-      addMarkers(data = house_subset())
+      addMarkers(~lng, ~lat, popup = ~htmlEscape(popup_content))
   })
+  
+  output$district_filter = renderText({
+    data_sub %>% summary()
+  })
+  
+  
 }
 
 shinyApp(ui, server)
