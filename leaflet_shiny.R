@@ -2,8 +2,11 @@ library(magrittr)
 library(shiny)
 library(leaflet)
 
-r_colors <- rgb(t(col2rgb(colors()) / 255))
-names(r_colors) <- colors()
+#data = read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>% 
+#  mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
+
+# run data cleaning code here
+
 
 ui <- fluidPage(
   fluidPage(
@@ -13,10 +16,10 @@ ui <- fluidPage(
         selectInput(
           "district_fit", "Fit by distric?",
           c(Yes = "yes", No = "no"),
-          selected = "yes"
+          selected = "no"
         ),
         conditionalPanel(
-          condition = "input.region_fit == 'yes'",
+          condition = "input.district_fit == 'yes'",
           selectInput(
             "district", "District",
             c("Chao Yang", "Hai Dian", "Dong Cheng")
@@ -28,14 +31,18 @@ ui <- fluidPage(
   ),
   leafletOutput("mymap"),
   p(),
-  actionButton("recalc", "back")
+  actionButton("resample", "resample")
 )
 
 server <- function(input, output, session) {
   
-  points <- eventReactive(input$recalc, {
-    cbind(data$Lng[1:100], data$Lat[1:100])
+  points <- eventReactive(input$resample, {
+    set.seed(625)
+    sample_houses = sample(1:30000, 100)
+    cbind(data$Lng[sample_houses], data$Lat[sample_houses])
   }, ignoreNULL = FALSE)
+  
+  output$points <- renderDataTable(points())
   
   output$mymap <- renderLeaflet({
     leaflet() %>%
@@ -47,6 +54,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
-
 
