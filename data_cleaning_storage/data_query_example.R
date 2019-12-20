@@ -14,29 +14,9 @@ pwd <- 'shinygroup2'
 con = dbConnect(pg, user=username, password=pwd,
                 host=endpoint, port=portnum, dbname='housing')
 
-# next is some query examples
-
-## query single variable
-singlevar = dbGetQuery(con, "SELECT constructiontime FROM housing;")
-
-## query multiple variables
-multivar= dbGetQuery(con, 'SELECT lng,lat,totalprice FROM housing;')
-
-## query based on conditions (numeric values)
-numericcondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure FROM housing
-                       WHERE totalprice > 300 AND totalprice < 1000;")
-
-## query based on conditions (string values)
-stringcondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure,district FROM housing
-                       WHERE district IN ('HaiDian', 'ChaoYang') ORDER BY totalprice DESC;")
-
-
-## query based on conditions (dates)
-datecondition = dbGetQuery(con, "SELECT totalprice,lng,lat,buildingstructure,tradetime FROM housing
-                       WHERE tradetime>='2015-01-01' and tradetime <'2016-12-31' ORDER BY tradetime DESC, totalprice DESC;")
 
 gen_data = function(district, bdtypes){
-  querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, \
+  querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, 
             elevator, subway, district, season FROM housing %s;"
   
   finalconstraint = ""
@@ -54,7 +34,7 @@ gen_data = function(district, bdtypes){
     if (length(bdtypes) == 1){
       multibdtype = FALSE
       bdconstraint = sprintf("buildingtype = '%s'", bdtypes)
-    } else{
+    } else if (length(bdtypes) == 2){
       bdconstraint = sprintf("buildingtype IN ('%s', '%s')", bdtypes[1], bdtypes[2])
     }
   }
@@ -72,9 +52,13 @@ gen_data = function(district, bdtypes){
   querystring = sprintf(querystring, finalconstraint)
   result = dbGetQuery(con, querystring)
     
-  if(dim(result)[1] < 70){ invertible = FALSE }
+  if(dim(result)[1] < 70){ inference = FALSE }
   
   return(list("data"=result, "multidistrict" = multidistrict, "multibdtype" = multibdtype, "inference"=inference))
 }
 
-dbDisconnect(con)
+# example
+result = gen_data("DaXing", c("Plate", "Tower"))
+
+# close connection to database
+# dbDisconnect(con)
