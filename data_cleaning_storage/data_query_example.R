@@ -16,7 +16,7 @@ con = dbConnect(pg, user=username, password=pwd,
 
 gen_data = function(district, bdtypes){
   querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, 
-            elevator, subway, district, season, lng, lat FROM housing %s;"
+            elevator, subway, district, tradetime, year, season, lng, lat FROM housing %s;"
   
   finalconstraint = ""
   disconstraint = ""
