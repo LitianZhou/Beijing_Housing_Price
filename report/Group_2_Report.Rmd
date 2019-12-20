@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Abstract
+# Introduction
 Housing costs in China have witnessed turbulent fluctuation in the past few years, especially in the country’s capital Beijing. In this project, we design and implement an R shiny app that offers interactive data visualization and statistical insights about the housing price trend in Beijing. The data source is from Kaggle. It contains 300k+ transaction logs between 2011 and 2017.
 
 # Dataset Summary and Storage
@@ -43,6 +43,32 @@ Because we need to subset the data in a variety of ways efficiently for the shin
 # data_query_example.R gives us the handler to query data from the database
 source("../data_cleaning_storage/data_query_example.R")
 # gen_data is a function that acts as an easy api for querying data based on selected district and building type
-exampledata = gen_data("HaiDian", c("Tower", "plate"))
+exampledata = gen_data("HaiDian", c("Tower", "Plate"))
 ```
+
+# Statistical Model
+
+```{r}
+# the model fitting function is in another script
+source("../Prediction_Model_Function.R")
+# the function accepts the object returned from the gen_data function.
+modeloutput = Filter_model(exampledata)
+```
+
+
+```{r}
+modeloutput$Prediction_Plot
+```
+
+
+# App Interface
+
+Put snapshots of the app here.
+
+# Deliverable and Code Repository
+
+Link to the online app.
+
+# Conclusion
+
 
