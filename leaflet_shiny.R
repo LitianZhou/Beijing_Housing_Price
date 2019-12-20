@@ -28,13 +28,14 @@ ui = fluidPage(
                            inline = FALSE),
         checkboxInput(inputId = "has_elevator", label="elevator", value = FALSE),
         checkboxInput(inputId = "has_subway", label="subway", value = FALSE),
-        actionButton(inputId ="resample", label = "refresh")
+        actionButton(inputId ="resample", label = "refresh"),
+        width = 2
       ),
       mainPanel(
-        leafletOutput("map"),
+        leafletOutput("map",width = "120%", height = 700),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
-        fluidRow(plotOutput(outputId = "histogram", height = 200))
+        fluidRow(plotOutput(outputId = "histogram", height = 100, width = 700))
       )
     )
   )
@@ -52,10 +53,9 @@ server = function(input, output, session) {
     # querydata(newinfo$data)
     #TODO: fit the model here
     sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 700))
-    data_sub <- info$data[sample_houses,]
+    data_sub = info$data[sample_houses,]
     return(data_sub)
   })
-  
   
   # TODO: generate subset of data for histogram (based on price range and squares elevator subway)
   
@@ -63,15 +63,16 @@ server = function(input, output, session) {
   
   #show a pop-up when a mark is clicked
   showHouseInfo = function(lng, lat, id){
+    data_sub = points()
     selectedHouse = data_sub[id,]
     content <- as.character(tagList(
       tags$h4("Price:", as.integer(selectedHouse$totalprice)),
       tags$strong(HTML(
-      sprintf("%.0fm2,   %.0fk/m2", selectedHouse$square, (selectedHouse$price/1000)))), tags$br(),
+      sprintf("%.0fm2,   %.0fk/m2", (selectedHouse$square+82.69), (selectedHouse$price/1000)))), tags$br(),
       sprintf("Building type: %5s", selectedHouse$buildingtype), tags$br(),
       sprintf("Has elevator: %5s", as.character(as.logical(selectedHouse$elevator))), tags$br(),
       sprintf("District: %5s", selectedHouse$district), tags$br(),
-      sprintf("lng: %5s", selectedHouse$lng)
+      sprintf("trade time: %5s", selectedHouse$tradetime)
     ))
     leafletProxy("map") %>% addPopups(lng, lat+0.0001, content)
   }
@@ -81,16 +82,12 @@ server = function(input, output, session) {
     house <- input$map_marker_click
     if (is.null(house))
       return()
-    isolate({
-      print(house$id)
-      print(data_sub[house$id,])
-      showHouseInfo(house$lng, house$lat, house$id)
-    })
+    
+    showHouseInfo(house$lng, house$lat, house$id)
   })
   
   output$map = renderLeaflet({
     data_sub = points()
-    data_sub$popup_content = data_sub %>% select(c(square, totalprice))
     data_sub %>% leaflet() %>% addProviderTiles(providers$OpenStreetMap.DE) %>%
       addMarkers(~lng, ~lat, layerId = ~1:nrow(data_sub),
                  clusterOptions = markerClusterOptions())
