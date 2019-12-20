@@ -72,7 +72,7 @@ Filter_model <- function(inquaried_data){
   ##lower_beta <- lower_beta[-length(lower_beta)]
   ##higher_beta <- higher_beta[-length(higher_beta)]
   beta_data <- data.frame(matrix(c(plotxaxis,(plotxaxis[length(plotxaxis)]+1):(plotxaxis[length(plotxaxis)]+8),beta_lower,beta_upper,betas),(8+num_season),4))
-  names(beta_data)[2:4] <- c("Lower Bound","Upper Bound","(Predicted) Mean")
+  names(beta_data)[2:4] <- c(" Lower Bound"," Upper Bound","(Predicted) Mean")
   beta_data <- gather(beta_data,"class","price",2:4)
   beta_data[,1] <- (beta_data[,1]-1)/4 + 2010
   names(beta_data)[1] <- "year"
