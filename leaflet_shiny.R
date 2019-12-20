@@ -4,15 +4,6 @@ library(leaflet)
 library(dplyr)
 library(ggplot2)
 
-# generate the connection object
-source("data_cleaning_storage/data_query_example.R")
-
-# generate initial data
-info = gen_data("all", c())
-sample_houses = sample(1:nrow(info$data), 700)
-# what is the first col??
-data_sub = info$data[sample_houses,]
-
 
 # define the interface appearance
 ui = fluidPage(
@@ -51,13 +42,13 @@ ui = fluidPage(
 
 library(htmltools)
 server = function(input, output, session) {
-  
+  # connect to database
+  source("data_cleaning_storage/data_query_example.R")
   # querydata = reactiveVal(info$data)
   
   # query raw data only based on district and buildingtype
   points = eventReactive(input$resample, {
     info = gen_data(input$district, input$building_type)
-    print("query data")
     # querydata(newinfo$data)
     #TODO: fit the model here
     sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 700))
@@ -116,6 +107,11 @@ server = function(input, output, session) {
     #filter by both district and building_type, then fit Kangping's model
     cat("you select ",input$district)
     cat("you select ", input$building_type)
+  })
+  
+  # close connection to database after session ends
+  session$onSessionEnded(function() {
+    dbDisconnect(con)
   })
 }
 
