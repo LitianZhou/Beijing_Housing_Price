@@ -76,7 +76,7 @@ Filter_model <- function(inquaried_data){
   beta_data <- gather(beta_data,"class","price",2:4)
   beta_data[,1] <- (beta_data[,1]-1)/4 + 2010
   names(beta_data)[1] <- "year"
-  prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + geom_line(size=1.5)
+  prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + geom_line(size=1.5) + scale_x_continuous(breaks = c(2012,2014,2016,2018))
   output <- list(coeff_info,model_stat,prediction_plot)
   names(output) <- c("coefficients","R_Squared","Prediction_Plot")
   return(output)
