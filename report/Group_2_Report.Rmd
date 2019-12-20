@@ -1,0 +1,74 @@
+---
+title: "Biostatistics 625 Final Project Report"
+author: 'Group 2 members: Mukai Wang, Kangping Yang, Litian Zhou'
+date: "December 20, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+Housing costs in China have witnessed turbulent fluctuation in the past few years, especially in the country’s capital Beijing. In this project, we design and implement an R shiny app that offers interactive data visualization and statistical insights about the housing price trend in Beijing. The data source is from Kaggle. It contains 300k+ transaction logs between 2011 and 2017.
+
+# Dataset Summary and Storage
+The raw data contains 26 variables. After we remove columns that are not useful (e.g. ids) and columns with too many missing values, we retain following variables that we are interested in.
+
+| Column      | Description |
+| ----------- | ----------- |
+| Lng         | Longitude of the housing |
+| Lat         | Latitude of the housing |
+| tradeTime   | Transaction time |
+| totalPrice  | Total Price of the Housing |
+| price       | Price per Square Meter |
+| square      | Area of the housing |
+| livingRoom  | Number of Living Rooms |
+| drawingRoom | Number of Drawing Rooms |
+| kitchen     | Number of kitchens      |
+| bathRoom    | Number of Bathrooms     |
+| floor       | The floor of the housing |
+| buildingType | "Tower" / "Plate" / "Tower/Plate" |
+| constructionTime | Year the housing is built |
+| renovationCondition | "Simplicity" / "HardCover" / "Rough" |
+| buildingStructure   | "Mixed" / "Brick/Wood" / "Brick/Concrete" / "Steel" / "Steel/Concrete" |
+| elevator | Whether there is elevator |
+| fiveYearsProperty | True/False | 
+| subway | Whether there is subway nearby |
+| district | The district the housing is in |
+
+Because we need to subset the data in a variety of ways efficiently for the shiny app to display the data from various aspects, we decide to store the data in a relational database. Because we plan to deploy our shiny app online, an online database is our desired option. We ended up using [Amazon Relational Database Service](https://aws.amazon.com/rds/). Because our data is not too large, a [free tier](https://aws.amazon.com/rds/free/) version is sufficient. The following example illustrates how we can query data from the database. For more details, please refer to our github repo.
+
+```{r}
+# data_query_example.R gives us the handler to query data from the database
+source("../data_cleaning_storage/data_query_example.R")
+# gen_data is a function that acts as an easy api for querying data based on selected district and building type
+exampledata = gen_data("HaiDian", c("Tower", "Plate"))
+```
+
+# Statistical Model
+
+```{r}
+# the model fitting function is in another script
+source("../Prediction_Model_Function.R")
+# the function accepts the object returned from the gen_data function.
+modeloutput = Filter_model(exampledata)
+```
+
+
+```{r}
+modeloutput$Prediction_Plot
+```
+
+
+# App Interface
+
+Put snapshots of the app here.
+
+# Deliverable and Code Repository
+
+Link to the online app.
+
+# Conclusion
+
+
