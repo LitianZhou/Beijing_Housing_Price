@@ -16,8 +16,8 @@ con = dbConnect(pg, user=username, password=pwd,
 
 
 gen_data = function(district, bdtypes){
-  querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, \
-            elevator, subway, district, lng, lat FROM housing %s;"
+  querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, 
+            elevator, subway, district, season, lng, lat FROM housing %s;"
   
   finalconstraint = ""
   disconstraint = ""
@@ -52,9 +52,14 @@ gen_data = function(district, bdtypes){
   querystring = sprintf(querystring, finalconstraint)
   result = dbGetQuery(con, querystring)
     
-  if(dim(result)[1] < 70){ invertible = FALSE }
+  if(dim(result)[1] < 70){ inference = FALSE }
   
   return(list("data"=result, "multidistrict" = multidistrict, "multibdtype" = multibdtype, "inference"=inference))
 }
 
+
+# example
+result = gen_data("DaXing", c("Plate", "Tower"))
+
+# close connection to database
 # dbDisconnect(con)
