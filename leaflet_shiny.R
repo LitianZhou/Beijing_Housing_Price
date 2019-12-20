@@ -8,13 +8,13 @@ library(ggplot2)
 # define the interface appearance
 ui = fluidPage(
   fluidPage(
-    titlePanel("Houses on Market"),
+    titlePanel("Beijing Second-hand House Market"),
     sidebarLayout(
       sidebarPanel(
-        sliderInput("price_range", label = h5("price range"), min = 100000, 
-                    max = 1000000, value = c(400000, 600000)),
-        sliderInput("square_range", label = h5("square"), min = 30, 
-                    max = 10000, value = c(100, 6000)),
+        sliderInput("price_range", label = h5("price range(10k)"), min = 10, 
+                    max = 4000, value = c(100, 1000)),
+        sliderInput("square_range", label = h5("square(m2)"), min = 7, 
+                    max = 500, value = c(70, 400)),
         selectInput(
           inputId = "district", label = "district",
           c("all", "ChangPing","ChaoYang", "DaXing", "DongCheng", "FangShan",
@@ -33,9 +33,11 @@ ui = fluidPage(
       ),
       mainPanel(
         leafletOutput("map",width = "120%", height = 700),
+        textOutput("warning"),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
-        fluidRow(plotOutput(outputId = "histogram", height = 100, width = 700))
+        fluidRow(plotOutput(outputId = "histogram", height = 100, width = 700)),
+        p("House trade data is from Lianjia.com")
       )
     )
   )
@@ -52,8 +54,14 @@ server = function(input, output, session) {
     info = gen_data(input$district, input$building_type)
     # querydata(newinfo$data)
     #TODO: fit the model here
-    sample_houses = sample(1:nrow(info$data), min(floor(nrow(info$data)/5), 700))
-    data_sub = info$data[sample_houses,]
+    
+    # filters applied to markers only
+    data_sub = info$data %>% filter(elevator==as.numeric(input$has_elevator) & subway==as.numeric(input$has_subway)
+                                    & totalprice >= input$price_range[1] & totalprice <= input$price_range[2]
+                                    & (square+82.69) >= input$square_range[1] & (square+82.69) <= input$square_range[2])
+    # if(nrow(data_sub)==0) output$warning = "No house satisfy the filter"
+    sample_houses = sample(1:nrow(data_sub), min(nrow(data_sub), 700))
+    data_sub = data_sub[sample_houses,]
     return(data_sub)
   })
   
@@ -66,12 +74,12 @@ server = function(input, output, session) {
     data_sub = points()
     selectedHouse = data_sub[id,]
     content <- as.character(tagList(
-      tags$h4("Price:", as.integer(selectedHouse$totalprice)),
+      tags$h4("Price:", as.integer(selectedHouse$totalprice*10), " k"),
       tags$strong(HTML(
       sprintf("%.0fm2,   %.0fk/m2", (selectedHouse$square+82.69), (selectedHouse$price/1000)))), tags$br(),
-      sprintf("Building type: %5s", selectedHouse$buildingtype), tags$br(),
-      sprintf("Has elevator: %5s", as.character(as.logical(selectedHouse$elevator))), tags$br(),
-      sprintf("District: %5s", selectedHouse$district), tags$br(),
+      sprintf("building type: %5s", selectedHouse$buildingtype), tags$br(),
+      sprintf("has elevator: %5s", as.character(as.logical(selectedHouse$elevator))), tags$br(),
+      sprintf("district: %5s", selectedHouse$district), tags$br(),
       sprintf("trade time: %5s", selectedHouse$tradetime)
     ))
     leafletProxy("map") %>% addPopups(lng, lat+0.0001, content)
