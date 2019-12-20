@@ -47,11 +47,11 @@ Filter_model <- function(inquaried_data){
   model_summary <- summary(model_build)
   coeff_info <- model_summary$coefficients[,c(-2,-3)]
   coeff_info <- coeff_info[1:(dim(coeff_info)[1]-num_season+1),]
-  model_stat <- c(model_summary$r.squared , model_summary$adj.r.squared)
+  model_stat <- model_summary$adj.r.squared
+  names(model_stat) <- c("Adjusted R^2")
   beta_rate <- betas[2:length(betas)]/betas[-length(betas)] # proportion of adjacent seasons
   ln_rate <- log(beta_rate)
   predict_ln_rate <- forecast(arima(ln_rate,c(8,1,1)))
-  predict_beta <- rep(0,10)
   ##lower raising speed
   ##lower_beta <- c(beta_lower,beta_lower[length(beta_lower)]*exp(predict_ln_rate$lower[1,1]))
   ##beta_low_rate <- lower_beta[2:length(lower_beta)]/lower_beta[-length(lower_beta)]
