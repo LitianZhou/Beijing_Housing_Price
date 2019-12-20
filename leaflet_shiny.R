@@ -4,8 +4,6 @@ library(leaflet)
 library(dplyr)
 library(ggplot2)
 
-
-# define the interface appearance
 ui = fluidPage(
   fluidPage(
     titlePanel("Beijing Second-hand House Market"),
@@ -35,10 +33,10 @@ ui = fluidPage(
         leafletOutput("map",width = "120%", height = 700),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
-        fluidRow(plotOutput(outputId = "histogram", height = 100, width = 700)),
-        fluidRow(plotOutput(outputId = "trendline", height = 300, width = 300)),
-        fluidRow(tableOutput(outputId = "coefficient")),
-        fluidRow(tableOutput(outputId = "model_para")),
+        splitLayout(plotOutput(outputId = "histogram", height = 300, width = 500),
+                   plotOutput(outputId = "trendline", height = 300, width = 500)),
+        splitLayout(tableOutput(outputId = "coefficient"),
+                   tableOutput(outputId = "model_para")),
         p("House trade data is from Lianjia.com")
       )
     )
@@ -94,7 +92,6 @@ server = function(input, output, session) {
     house <- input$map_marker_click
     if (is.null(house))
       return()
-    
     showHouseInfo(house$lng, house$lat, house$id)
   })
   
@@ -113,19 +110,18 @@ server = function(input, output, session) {
   })
   
   output$trendline = renderPlot({
-    print("render prediction plot")
     points()[[2]]$Prediction_Plot
   })
   
   output$coefficient = renderTable({
-    print("render coefficient table")
-    points()[[2]]$coefficients
-  })
+    betas = points()[[2]]$coefficients
+    #betas$variables = rownames(betas)
+  }, rownames = TRUE, digits =-2)
   
   output$model_para = renderTable({
     print("render model para")
     points()[[2]]$R_Squared
-  })
+  }, rownames = TRUE, digits=3)
   
   # close connection to database after session ends
   session$onSessionEnded(function() {
