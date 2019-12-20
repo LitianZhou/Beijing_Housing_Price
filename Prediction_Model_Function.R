@@ -46,6 +46,7 @@ Filter_model <- function(inquaried_data){
   beta_upper <- betas
   model_summary <- summary(model_build)
   coeff_info <- model_summary$coefficients[,c(-2,-3)]
+  coeff_info <- coeff_info[1:(dim(coeff_info)[1]-num_season+1),]
   model_stat <- c(model_summary$r.squared , model_summary$adj.r.squared)
   beta_rate <- betas[2:length(betas)]/betas[-length(betas)] # proportion of adjacent seasons
   ln_rate <- log(beta_rate)
