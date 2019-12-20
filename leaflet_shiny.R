@@ -71,18 +71,18 @@ server = function(input, output, session) {
   # TODO: generate subset of data for map(random sample)
   
   #show a pop-up when a mark is clicked
-  showHouseInfo = function(lng, lat, ind){
-    selectedHouse = data_sub[ind,]
+  showHouseInfo = function(lng, lat, id){
+    selectedHouse = data_sub[id,]
     content <- as.character(tagList(
       tags$h4("Price:", as.integer(selectedHouse$totalprice)),
-      tags$strong(HTML(sprintf("%.0fm2,   %.0fk/m2",
-                                selectedHouse$square, (selectedHouse$price/1000)
-      ))), tags$br(),
+      tags$strong(HTML(
+      sprintf("%.0fm2,   %.0fk/m2", selectedHouse$square, (selectedHouse$price/1000)))), tags$br(),
       sprintf("Building type: %5s", selectedHouse$buildingtype), tags$br(),
       sprintf("Has elevator: %5s", as.character(as.logical(selectedHouse$elevator))), tags$br(),
-      sprintf("District: %5s", selectedHouse$district)
+      sprintf("District: %5s", selectedHouse$district), tags$br(),
+      sprintf("lng: %5s", selectedHouse$lng)
     ))
-    leafletProxy("map") %>% addPopups(lng, lat+0.001, content)
+    leafletProxy("map") %>% addPopups(lng, lat+0.0001, content)
   }
   
   observe({
@@ -90,8 +90,9 @@ server = function(input, output, session) {
     house <- input$map_marker_click
     if (is.null(house))
       return()
-    
     isolate({
+      print(house$id)
+      print(data_sub[house$id,])
       showHouseInfo(house$lng, house$lat, house$id)
     })
   })
