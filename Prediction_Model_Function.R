@@ -44,7 +44,11 @@ Filter_model <- function(inquaried_data){
   betas <- betas + beta0
   beta_lower <- betas
   beta_upper <- betas
-  
+  model_summary <- summary(model_build)
+  coeff_info <- model_summary$coefficients[,c(-2,-3)]
+  coeff_info <- coeff_info[1:(dim(coeff_info)[1]-num_season+1),]
+  model_stat <- c(model_summary$r.squared , model_summary$adj.r.squared)
+
   beta_rate <- betas[2:length(betas)]/betas[-length(betas)] # proportion of adjacent seasons
   ln_rate <- log(beta_rate)
   predict_ln_rate <- forecast(arima(ln_rate,c(8,1,1)))
@@ -70,5 +74,8 @@ Filter_model <- function(inquaried_data){
   beta_data <- gather(beta_data,"class","price",2:3)
   beta_data[,1] <- (beta_data[,1]-1)/4 + 2010
   names(beta_data)[1] <- "year"
-  ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + geom_line(size=1.5)
+  prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + geom_line(size=1.5)
+  output <- list(coeff_info,model_stat,prediction_plot)
+  names(output) <- c("coefficients","R_Squared","Prediction_Plot")
+  return(output)
 }
