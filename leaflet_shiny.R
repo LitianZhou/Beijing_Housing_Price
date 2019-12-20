@@ -1,55 +1,122 @@
 library(magrittr)
 library(shiny)
 library(leaflet)
-
-#data = read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>% 
-#  mutate(floor = str_trim(str_extract(floor,"( .*)"), side = "both"))
-
-# run data cleaning code here
+library(dplyr)
+library(ggplot2)
 
 
-ui <- fluidPage(
+# define the interface appearance
+ui = fluidPage(
   fluidPage(
-    titlePanel("Houses on Market"),
+    titlePanel("Beijing Second-hand House Market"),
     sidebarLayout(
       sidebarPanel(
+        sliderInput("price_range", label = h5("price range(10k)"), min = 10, 
+                    max = 4000, value = c(100, 1000)),
+        sliderInput("square_range", label = h5("square(m2)"), min = 7, 
+                    max = 500, value = c(70, 400)),
         selectInput(
-          "district_fit", "Fit by distric?",
-          c(Yes = "yes", No = "no"),
-          selected = "no"
+          inputId = "district", label = "district",
+          c("all", "ChangPing","ChaoYang", "DaXing", "DongCheng", "FangShan",
+            "FengTai", "HaiDian", "MenTouGou", "ShiJingShan", "ShunYi", "TongZhou",
+            "XiCheng"),
+          selected = "all"
         ),
-        conditionalPanel(
-          condition = "input.district_fit == 'yes'",
-          selectInput(
-            "district", "District",
-            c("Chao Yang", "Hai Dian", "Dong Cheng")
-          )
-        )
+        checkboxGroupInput(inputId = "building_type", label = "building type",
+                           choices = c("Tower","Plate", "Plate/Tower"),
+                           selected = c("Tower","Plate", "Plate/Tower"),
+                           inline = FALSE),
+        checkboxInput(inputId = "has_elevator", label="elevator", value = FALSE),
+        checkboxInput(inputId = "has_subway", label="subway", value = FALSE),
+        actionButton(inputId ="resample", label = "refresh"),
+        width = 2
       ),
-      mainPanel()
+      mainPanel(
+        leafletOutput("map",width = "120%", height = 700),
+        textOutput("warning"),
+        p(),
+        textOutput(outputId = "district_filter", inline = TRUE),
+        fluidRow(plotOutput(outputId = "histogram", height = 100, width = 700)),
+        p("House trade data is from Lianjia.com")
+      )
     )
-  ),
-  leafletOutput("mymap"),
-  p(),
-  actionButton("resample", "resample")
+  )
 )
 
-server <- function(input, output, session) {
+library(htmltools)
+server = function(input, output, session) {
+  # connect to database
+  source("data_cleaning_storage/data_query_example.R")
+  # querydata = reactiveVal(info$data)
   
-  points <- eventReactive(input$resample, {
-    set.seed(625)
-    sample_houses = sample(1:30000, 100)
-    cbind(data$Lng[sample_houses], data$Lat[sample_houses])
-  }, ignoreNULL = FALSE)
+  # query raw data only based on district and buildingtype
+  points = eventReactive(input$resample, {
+    info = gen_data(input$district, input$building_type)
+    # querydata(newinfo$data)
+    #TODO: fit the model here
+    
+    # filters applied to markers only
+    data_sub = info$data %>% filter(elevator==as.numeric(input$has_elevator) & subway==as.numeric(input$has_subway)
+                                    & totalprice >= input$price_range[1] & totalprice <= input$price_range[2]
+                                    & (square+82.69) >= input$square_range[1] & (square+82.69) <= input$square_range[2])
+    # if(nrow(data_sub)==0) output$warning = "No house satisfy the filter"
+    sample_houses = sample(1:nrow(data_sub), min(nrow(data_sub), 700))
+    data_sub = data_sub[sample_houses,]
+    return(data_sub)
+  })
   
-  output$points <- renderDataTable(points())
+  # TODO: generate subset of data for histogram (based on price range and squares elevator subway)
   
-  output$mymap <- renderLeaflet({
-    leaflet() %>%
-      addProviderTiles(providers$OpenStreetMap.Mapnik,
-                       options = providerTileOptions(noWrap = TRUE)
-      ) %>%
-      addMarkers(data = points())
+  # TODO: generate subset of data for map(random sample)
+  
+  #show a pop-up when a mark is clicked
+  showHouseInfo = function(lng, lat, id){
+    data_sub = points()
+    selectedHouse = data_sub[id,]
+    content <- as.character(tagList(
+      tags$h4("Price:", as.integer(selectedHouse$totalprice*10), " k"),
+      tags$strong(HTML(
+      sprintf("%.0fm2,   %.0fk/m2", (selectedHouse$square+82.69), (selectedHouse$price/1000)))), tags$br(),
+      sprintf("building type: %5s", selectedHouse$buildingtype), tags$br(),
+      sprintf("has elevator: %5s", as.character(as.logical(selectedHouse$elevator))), tags$br(),
+      sprintf("district: %5s", selectedHouse$district), tags$br(),
+      sprintf("trade time: %5s", selectedHouse$tradetime)
+    ))
+    leafletProxy("map") %>% addPopups(lng, lat+0.0001, content)
+  }
+  
+  observe({
+    leafletProxy("map") %>% clearPopups()
+    house <- input$map_marker_click
+    if (is.null(house))
+      return()
+    
+    showHouseInfo(house$lng, house$lat, house$id)
+  })
+  
+  output$map = renderLeaflet({
+    data_sub = points()
+    data_sub %>% leaflet() %>% addProviderTiles(providers$OpenStreetMap.DE) %>%
+      addMarkers(~lng, ~lat, layerId = ~1:nrow(data_sub),
+                 clusterOptions = markerClusterOptions())
+  })
+  
+  output$histogram = renderPlot({
+    data_sub = points()
+    # handle the elevator and subway, considering give the task to Mukai
+    ggplot(data_sub  %>% filter(elevator==0 & subway==0), aes(x=totalprice)) +
+      geom_histogram(bins = 30)
+  })
+  
+  output$trendline = renderPlot({
+    #filter by both district and building_type, then fit Kangping's model
+    cat("you select ",input$district)
+    cat("you select ", input$building_type)
+  })
+  
+  # close connection to database after session ends
+  session$onSessionEnded(function() {
+    dbDisconnect(con)
   })
 }
 
