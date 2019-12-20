@@ -33,10 +33,12 @@ ui = fluidPage(
       ),
       mainPanel(
         leafletOutput("map",width = "120%", height = 700),
-        textOutput("warning"),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
         fluidRow(plotOutput(outputId = "histogram", height = 100, width = 700)),
+        fluidRow(plotOutput(outputId = "trendline", height = 300, width = 300)),
+        fluidRow(tableOutput(outputId = "coefficient")),
+        fluidRow(tableOutput(outputId = "model_para")),
         p("House trade data is from Lianjia.com")
       )
     )
@@ -47,13 +49,15 @@ library(htmltools)
 server = function(input, output, session) {
   # connect to database
   source("data_cleaning_storage/data_query_example.R")
-  # querydata = reactiveVal(info$data)
+  
+  # source the model building code
+  source("Prediction_Model_Function.R")
   
   # query raw data only based on district and buildingtype
   points = eventReactive(input$resample, {
     info = gen_data(input$district, input$building_type)
-    # querydata(newinfo$data)
-    #TODO: fit the model here
+    model = Filter_model(info)
+    if(length(model)<3) print(model) # model failing will return a string
     
     # filters applied to markers only
     data_sub = info$data %>% filter(elevator==as.numeric(input$has_elevator) & subway==as.numeric(input$has_subway)
@@ -62,7 +66,7 @@ server = function(input, output, session) {
     # if(nrow(data_sub)==0) output$warning = "No house satisfy the filter"
     sample_houses = sample(1:nrow(data_sub), min(nrow(data_sub), 700))
     data_sub = data_sub[sample_houses,]
-    return(data_sub)
+    return(list(data_sub, model))
   })
   
   # TODO: generate subset of data for histogram (based on price range and squares elevator subway)
@@ -71,7 +75,7 @@ server = function(input, output, session) {
   
   #show a pop-up when a mark is clicked
   showHouseInfo = function(lng, lat, id){
-    data_sub = points()
+    data_sub = points()[[1]]
     selectedHouse = data_sub[id,]
     content <- as.character(tagList(
       tags$h4("Price:", as.integer(selectedHouse$totalprice*10), " k"),
@@ -95,23 +99,32 @@ server = function(input, output, session) {
   })
   
   output$map = renderLeaflet({
-    data_sub = points()
+    data_sub = points()[[1]]
     data_sub %>% leaflet() %>% addProviderTiles(providers$OpenStreetMap.DE) %>%
       addMarkers(~lng, ~lat, layerId = ~1:nrow(data_sub),
                  clusterOptions = markerClusterOptions())
   })
   
   output$histogram = renderPlot({
-    data_sub = points()
+    data_sub = points()[[1]]
     # handle the elevator and subway, considering give the task to Mukai
     ggplot(data_sub  %>% filter(elevator==0 & subway==0), aes(x=totalprice)) +
       geom_histogram(bins = 30)
   })
   
   output$trendline = renderPlot({
-    #filter by both district and building_type, then fit Kangping's model
-    cat("you select ",input$district)
-    cat("you select ", input$building_type)
+    print("render prediction plot")
+    points()[[2]]$Prediction_Plot
+  })
+  
+  output$coefficient = renderTable({
+    print("render coefficient table")
+    points()[[2]]$coefficients
+  })
+  
+  output$model_para = renderTable({
+    print("render model para")
+    points()[[2]]$R_Squared
   })
   
   # close connection to database after session ends
