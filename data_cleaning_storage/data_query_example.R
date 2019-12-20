@@ -14,7 +14,6 @@ pwd <- 'shinygroup2'
 con = dbConnect(pg, user=username, password=pwd,
                 host=endpoint, port=portnum, dbname='housing')
 
-
 gen_data = function(district, bdtypes){
   querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, 
             elevator, subway, district, season, lng, lat FROM housing %s;"
@@ -59,7 +58,7 @@ gen_data = function(district, bdtypes){
 
 
 # example
-result = gen_data("DaXing", c("Plate", "Tower"))
+# result = gen_data("DaXing", c("Plate", "Tower"))
 
 # close connection to database
 # dbDisconnect(con)
