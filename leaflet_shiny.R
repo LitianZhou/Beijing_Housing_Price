@@ -38,13 +38,10 @@ ui = fluidPage(
         leafletOutput("map",width = "120%", height = 700),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
-<<<<<<< HEAD
+
         fluidRow(plotlyOutput(outputId = "histogram", height = 300, width = 1000)),
-        fluidRow(plotOutput(outputId = "trendline", height = 300, width = 1000)),
-=======
-        splitLayout(plotlyOutput(outputId = "histogram", height = 300, width = 500),
-                   plotlyOutput(outputId = "trendline", height = 300, width = 500)),
->>>>>>> 2ef6f52ac4c628581cacba15b66d9c385e232fc2
+        fluidRow(plotlyOutput(outputId = "trendline", height = 300, width = 1000)),
+
         splitLayout(tableOutput(outputId = "coefficient"),
                    tableOutput(outputId = "model_para")),
         p("House trade data is from Lianjia.com")
