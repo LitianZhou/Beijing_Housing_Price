@@ -13,29 +13,7 @@ knitr::opts_chunk$set(cache = TRUE)
 Housing costs in China have witnessed turbulent fluctuation in the past few years, especially in the country’s capital Beijing. In this project, we design and implement an R shiny app that offers interactive data visualization and statistical insights about the housing price trend in Beijing. The data source is from Kaggle. It contains 300k+ transaction logs between 2011 and 2017.
 
 # Dataset Summary and Storage
-The raw data contains 26 variables. After we remove columns that are not useful (e.g. ids) and columns with too many missing values, we retain following variables that we are interested in.
-
-| Column      | Description |
-| ----------- | ----------- |
-| Lng         | Longitude of the housing |
-| Lat         | Latitude of the housing |
-| tradeTime   | Transaction time |
-| totalPrice  | Total Price of the Housing |
-| price       | Price per Square Meter |
-| square      | Area of the housing |
-| livingRoom  | Number of Living Rooms |
-| drawingRoom | Number of Drawing Rooms |
-| kitchen     | Number of kitchens      |
-| bathRoom    | Number of Bathrooms     |
-| floor       | The floor of the housing |
-| buildingType | "Tower" / "Plate" / "Tower/Plate" |
-| constructionTime | Year the housing is built |
-| renovationCondition | "Simplicity" / "HardCover" / "Rough" |
-| buildingStructure   | "Mixed" / "Brick/Wood" / "Brick/Concrete" / "Steel" / "Steel/Concrete" |
-| elevator | Whether there is elevator |
-| fiveYearsProperty | True/False | 
-| subway | Whether there is subway nearby |
-| district | The district the housing is in |
+The raw data contains 26 variables. After we remove columns that are not useful (e.g. ids) and columns with too many missing values, we retain ## variables that we are interested in. For details of the variables, please refer to our codebook in the github repo. 
 
 In order to better explain the association between price and time, we decide to generate a new variable called `season` based on the tradetime. The `season` variable sets the first season of 2010 as 1, the second season season of 2010 as 2, etc until the first season of 2018 as 33.
 
@@ -107,9 +85,9 @@ plot(residual_ln_rate)
 ```
 
 The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time. Therefore, we assume the log rate difference between adjacent seasons tend to be a constant around zero. For time series model ARIMA$(p,d,q)$, this assumption indicates d = 1.
-As for $p$, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose p = 8 (8 seasons i.e. 2 years).
+As for $p$, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose $p$ = 8 (8 seasons i.e. 2 years).
 As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season. We descide to choose q = 1
-The prediction model we use is ARIMA(8,1,1)
+The prediction model we use is ARIMA(8,1,1).
 
 ```{r, verbose=FALSE}
 # the model fitting function is in another script
