@@ -37,13 +37,15 @@ ui = fluidPage(
       mainPanel(
         leafletOutput("map",width = "120%", height = 700),
         p(),
-        textOutput(outputId = "district_filter", inline = TRUE),
-
-        fluidRow(plotlyOutput(outputId = "histogram", height = 300, width = 1000)),
-        fluidRow(plotlyOutput(outputId = "trendline", height = 300, width = 1000)),
-
+        h3("Plots: "),
+        hr(),
+        fluidRow(plotlyOutput(outputId = "histogram", height = 300, width = 1200)),
+        fluidRow(plotlyOutput(outputId = "trendline", height = 300, width = 1200)),
+        p(),
+        h3("Statistic: "),
         splitLayout(tableOutput(outputId = "coefficient"),
-                   tableOutput(outputId = "model_para")),
+                   verticalLayout(tableOutput(outputId = "model_para"), 
+                                  htmlOutput("interpretation"))),
         p("House trade data is from Lianjia.com")
       )
     )
@@ -137,13 +139,41 @@ server = function(input, output, session) {
   
   output$coefficient = renderTable({
     betas = points()[[2]]$coefficients
-    #betas$variables = rownames(betas)
   }, rownames = TRUE, digits =-2)
   
   output$model_para = renderTable({
     points()[[2]]$R_Squared
   }, rownames = TRUE, digits=3)
   
+  output$interpretation = renderText({
+    betas = as.data.frame(points()[[2]]$coefficients)
+    betas$variables = rownames(betas)
+    
+    # interpret = paste(sprintf("In the %s district, when time is fixed, ", input$district),
+    #                   sprintf(" one more bathroom will increase the price per m2 by %.0f RMB;",
+    #                           as.numeric(filter(betas_df, variables=="bathroom")[1])), "\n",
+    #                   sprintf("price of houses with elevator is %.0f RMB higher than houses without elevator;",
+    #                           as.numeric(filter(betas_df, variables=="elevator")[1])),
+    #                   sprintf("price of houses with subway nearby is %.0f RMB higher than houses away from subway;",
+    #                           as.numeric(filter(betas_df, variables=="subway")[1])),
+    #                   sprintf("price of plate house type is %.0f and %.0f higher than plate/tower and tower respectively.",
+    #                           abs(filter(betas_df, variables=="buildingtypePlate/Tower")[1]),
+    #                           abs(filter(betas_df, variables=="buildingtypeTower")[1])))
+    
+    # UI/HTML output
+    interpret = HTML(tags$div(sprintf("In the %s district, when time is fixed, ", input$district),
+                             sprintf(" one more bathroom will increase the price per m2 by %.0f RMB;",
+                                     as.numeric(filter(betas_df, variables=="bathroom")[1])), tags$br(),
+                             sprintf("price of houses with elevator is %.0f RMB higher than houses without elevator;",
+                                     as.numeric(filter(betas_df, variables=="elevator")[1])), tags$br(),
+                             sprintf("price of houses with subway nearby is %.0f RMB higher than houses away from subway;",
+                                     as.numeric(filter(betas_df, variables=="subway")[1])), tags$br(),
+                             sprintf("price of plate house type is %.0f and %.0f higher than plate/tower and tower respectively.",
+                                     filter(betas_df, variables=="buildingtypePlate/Tower")[1],
+                                     filter(betas_df, variables=="buildingtypeTower")[1])))
+  })
+  
+
   # close connection to database after session ends
   session$onSessionEnded(function() {
     dbDisconnect(con)
