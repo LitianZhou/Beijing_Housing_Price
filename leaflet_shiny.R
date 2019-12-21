@@ -44,8 +44,8 @@ ui = fluidPage(
         p(),
         h3("Statistic: "),
         splitLayout(tableOutput(outputId = "coefficient"),
-                   verticalLayout(tableOutput(outputId = "model_para"), 
-                                  htmlOutput("interpretation"))),
+                   verticalLayout(tableOutput(outputId = "model_para"),
+                                  uiOutput("interpretation"))), # need to add comments here
         p("House trade data is from Lianjia.com")
       )
     )
@@ -145,7 +145,7 @@ server = function(input, output, session) {
     points()[[2]]$R_Squared
   }, rownames = TRUE, digits=3)
   
-  output$interpretation = renderText({
+  output$interpretation = renderUI({
     betas = as.data.frame(points()[[2]]$coefficients)
     betas$variables = rownames(betas)
     
@@ -161,16 +161,16 @@ server = function(input, output, session) {
     #                           abs(filter(betas_df, variables=="buildingtypeTower")[1])))
     
     # UI/HTML output
-    interpret = HTML(tags$div(sprintf("In the %s district, when time is fixed, ", input$district),
-                             sprintf(" one more bathroom will increase the price per m2 by %.0f RMB;",
-                                     as.numeric(filter(betas_df, variables=="bathroom")[1])), tags$br(),
-                             sprintf("price of houses with elevator is %.0f RMB higher than houses without elevator;",
-                                     as.numeric(filter(betas_df, variables=="elevator")[1])), tags$br(),
-                             sprintf("price of houses with subway nearby is %.0f RMB higher than houses away from subway;",
-                                     as.numeric(filter(betas_df, variables=="subway")[1])), tags$br(),
-                             sprintf("price of plate house type is %.0f and %.0f higher than plate/tower and tower respectively.",
-                                     filter(betas_df, variables=="buildingtypePlate/Tower")[1],
-                                     filter(betas_df, variables=="buildingtypeTower")[1])))
+    interpret = tags$div(tags$p(sprintf("In the %s district, when time is fixed, ", input$district)),
+                             tags$p(sprintf(" one more bathroom will increase the price per m2 by %.0f RMB;",
+                                     as.numeric(filter(betas, variables=="bathroom")[1]))),
+                             tags$p(sprintf("price of houses with elevator is %.0f RMB higher than houses without elevator;",
+                                     as.numeric(filter(betas, variables=="elevator")[1]))),
+                             tags$p(sprintf("price of houses with subway nearby is %.0f RMB higher than houses away from subway;",
+                                     as.numeric(filter(betas, variables=="subway")[1]))),
+                             tags$p(sprintf("price of plate house type is %.0f and %.0f higher than plate/tower and tower respectively.",
+                                     filter(betas, variables=="buildingtypePlate/Tower")[1],
+                                     filter(betas, variables=="buildingtypeTower")[1])))
   })
   
 
