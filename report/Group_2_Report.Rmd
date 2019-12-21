@@ -84,10 +84,9 @@ plot(ln_rate)
 residual_ln_rate <- ln_rate[2:length(ln_rate)]-ln_rate[-length(ln_rate)]
 plot(residual_ln_rate)
 ```
-The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time.
-So we assume the log rate difference between adjecant seasons tend to be a constant around zero. For time series model ARIMA(p,d,q), this assumption indicate we choose d = 1.
-As for p, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose p = 8 (8 seasons i.e. 2 years).
-As for q, we found the residual of log rate tend to be auto-regressive by 1 season (The third plot tend to be positive in general). We descide to choose q = 1
+The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time. Therefore, we assume the log rate difference between adjacent seasons tend to be a constant around zero. For time series model ARIMA$(p,d,q)$, this assumption indicates d = 1.
+As for $p$, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose p = 8 (8 seasons i.e. 2 years).
+As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season (The third plot tend to be positive in general). We descide to choose q = 1
 The prediction model we use is ARIMA(8,1,1)
 
 ```{r}
@@ -99,7 +98,10 @@ modeloutput = Filter_model(exampledata)
 
 
 ```{r}
-modeloutput$Prediction_Plot
+plots = ggplot(modeloutput$beta_data, aes(x = year, y = price , color = class)) + 
+      geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') +
+  scale_x_continuous(breaks = c(2012,2014,2016,2018))
+plots
 ```
 
 
