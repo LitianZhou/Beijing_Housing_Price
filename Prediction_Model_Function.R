@@ -51,7 +51,12 @@ Filter_model <- function(inquaried_data){
   names(model_stat) <- c("Adjusted R^2")
   beta_rate <- betas[2:length(betas)]/betas[-length(betas)] # proportion of adjacent seasons
   ln_rate <- log(beta_rate)
-  predict_ln_rate <- forecast(arima(ln_rate,c(8,1,1)))
+  outlier_dist  <- names(table(subdata$district))
+  if (outlier_dist[1] == "DongCheng" && length(outlier_dist) == 1){
+    predict_ln_rate <- forecast(arima(ln_rate,c(7,1,1)))
+  }else{
+    predict_ln_rate <- forecast(arima(ln_rate,c(8,1,1)))
+  }
   ##lower raising speed
   ##lower_beta <- c(beta_lower,beta_lower[length(beta_lower)]*exp(predict_ln_rate$lower[1,1]))
   ##beta_low_rate <- lower_beta[2:length(lower_beta)]/lower_beta[-length(lower_beta)]
@@ -79,7 +84,7 @@ Filter_model <- function(inquaried_data){
 
   prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + 
     geom_line(size=1.5) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
-  output <- list(coeff_info,model_stat,prediction_plot)
-  names(output) <- c("coefficients","R_Squared","Prediction_Plot")
+  output <- list(coeff_info,model_stat,beta_data)
+  names(output) <- c("coefficients","R_Squared","beta_data")
   return(output)
 }

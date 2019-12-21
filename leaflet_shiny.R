@@ -38,8 +38,10 @@ ui = fluidPage(
         leafletOutput("map",width = "120%", height = 700),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
-        splitLayout(plotlyOutput(outputId = "histogram", height = 300, width = 500),
-                   plotOutput(outputId = "trendline", height = 300, width = 500)),
+
+        fluidRow(plotlyOutput(outputId = "histogram", height = 300, width = 1000)),
+        fluidRow(plotlyOutput(outputId = "trendline", height = 300, width = 1000)),
+
         splitLayout(tableOutput(outputId = "coefficient"),
                    tableOutput(outputId = "model_para")),
         p("House trade data is from Lianjia.com")
@@ -97,22 +99,35 @@ server = function(input, output, session) {
   })
   
   output$map = renderLeaflet({
+    leaflet() %>% setView(lng = 116.4, lat=39.9, zoom = 11) %>%
+      addProviderTiles(providers$OpenStreetMap.DE)
+  })
+  
+  observe({
     data_sub = points()[[1]]
-    data_sub %>% leaflet() %>% addProviderTiles(providers$OpenStreetMap.DE) %>%
-      addMarkers(~lng, ~lat, layerId = ~1:nrow(data_sub),
+    leafletProxy("map", data = data_sub) %>% 
+      clearMarkers() %>%
+      addMarkers(~lng, ~lat, layerId = ~1:nrow(data_sub), 
                  clusterOptions = markerClusterOptions())
   })
   
   output$histogram = renderPlotly({
     data_sub = points()[[1]]
     ggplot(data_sub, aes(x=totalprice, fill=data_sub$district)) + 
-      geom_histogram(bins = nrow(data_sub)/20, position = "dodge") +
-      scale_color_brewer(palette = "Set3")
+      geom_histogram(bins = nrow(data_sub)/50,position = "dodge") +
+      scale_color_brewer(palette = "Set3") +
+      labs( x = "Total Price", y = "Amount of Houses", title = "Histogram of Houses",
+            caption = "click the district name to select/deselect them") +
+      theme_classic()
   })
   
-  output$trendline = renderPlot({
-    points()[[2]]$Prediction_Plot
+  output$trendline = renderPlotly({
+    data_model = points()[[2]]$beta_data
+    plots = ggplot(data_model, aes(x = year, y = price , color = class)) + 
+      geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
+    ggplotly(plots)
   })
+  
   
   output$coefficient = renderTable({
     betas = points()[[2]]$coefficients
