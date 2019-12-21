@@ -67,9 +67,11 @@ plot(selection,scale = "Cp")
 Based on the Mallow's Cp statistic, We choose covariates `square`,`bathroom`,`buildingtype`,`renovationcondition`, `district`, `elevator`, `subway` and `season`. To increase the model accuracy we decide to treat `season` as a factor.
 ```{r}
 exampledata$data$season <- as.factor(exampledata$data$season)
-model_select <- lm(price ~ square + bathroom + buildingtype + constructiontime + renovationcondition + elevator + subway + season, data = exampledata$data)
-season_price <- c(0,model_select$coefficients[11:38])
-reference <- model_select$coefficients[1] + mean(exampledata$data$bathroom)*model_select$coefficients[3]
+model_select <- lm(price ~ square + bathroom + buildingtype + constructiontime + renovationcondition + elevator + subway + district +season, data = exampledata$data)
+season_price <- c(0,model_select$coefficients[23:54])
+district_stat <- table(exampledata$data$district)
+weight_dist <- district_stat/sum(district_stat)
+reference <- model_select$coefficients[1] + mean(exampledata$data$bathroom)*model_select$coefficients[3] + sum(weight_dist*c(0,model_select$coefficients[12:22])) 
 season_price <- season_price + reference   ##extract season coefficients as average selling price for time-series references.
 plot(season_price) ## see the trend of housing price across seasons
 residual <- season_price[2:length(season_price)]-season_price[-length(season_price)]
@@ -86,7 +88,7 @@ plot(residual_ln_rate)
 ```
 The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time. Therefore, we assume the log rate difference between adjacent seasons tend to be a constant around zero. For time series model ARIMA$(p,d,q)$, this assumption indicates d = 1.
 As for $p$, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose p = 8 (8 seasons i.e. 2 years).
-As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season (The third plot tend to be positive in general). We descide to choose q = 1
+As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season. We descide to choose q = 1
 The prediction model we use is ARIMA(8,1,1)
 
 ```{r}
