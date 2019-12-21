@@ -63,7 +63,13 @@ modeloutput$Prediction_Plot
 
 # App Interface
 
-Put snapshots of the app here.
+We integrate data visualization and statistical inference into one webpage supported by Rshiny. The interface has four panels: map & markers panel, filter panel, plots panel and statistical inference panel.
+
+Since we have more than thirty thousand house trading record, for the sake of reactivity, the map will random sampling seven hundred records which satisfies the filters.
+
+In the left panel, user can apply filters to the markers shown on the map
+
+
 
 # Deliverable and Code Repository
 
