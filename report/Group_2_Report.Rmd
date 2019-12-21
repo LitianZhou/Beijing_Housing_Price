@@ -43,10 +43,52 @@ Because we need to subset the data in a variety of ways efficiently for the shin
 # data_query_example.R gives us the handler to query data from the database
 source("../data_cleaning_storage/data_query_example.R")
 # gen_data is a function that acts as an easy api for querying data based on selected district and building type
-exampledata = gen_data("HaiDian", c("Tower", "Plate"))
+# gen_full_data is a similar function that return data with all covariates above to demenstrate full model.
+exampledata = gen_full_data("HaiDian", c("Tower", "Plate"))
 ```
 
 # Statistical Model
+As we first to descide a model to use, we tried the full model first, that fit all the covariates above excluding the total price in the linear regression model and the 'price' as the output.
+
+```{r}
+library(leaps)
+#exampledata$data$season <- as.factor(exampledata$data$season)
+full_model <- lm(price ~ square + livingroom + drawingroom + kitchen + bathroom + floor + buildingtype + constructiontime + renovationcondition + buildingstructure + elevator + fiveyearsproperty + subway + season, data = exampledata$data)
+mat_full <- model.matrix(full_model)
+selection <-regsubsets(mat_full,exampledata$data$price,int = F,really.big = T,method = "exhaust", nvmax = 9)
+summary(full_model)
+summary(selection)
+coef(selection,9)
+plot(selection,scale = "Cp")
+```
+As we see from the result of model selection from example data we choose covarites 'square','floor','renovationcondition','elevator','subway','season' as our covarites for best mallow's Cp, which achieve a balance in baisness and estimate variance.
+We actually choose simliar model for the full data set with covariates 'square','bathroom','buildingtype','renovationcondition', 'district', 'elevator', 'subway' and factorized 'season'.
+We continule to factorize season to analysis the price trend.
+```{r}
+exampledata$data$season <- as.factor(exampledata$data$season)
+model_select <- lm(price ~ square + bathroom + buildingtype + constructiontime + renovationcondition + elevator + subway + season, data = exampledata$data)
+season_price <- c(0,model_select$coefficients[11:38])
+reference <- model_select$coefficients[1] + mean(exampledata$data$bathroom)*model_select$coefficients[3]
+season_price <- season_price + reference   ##extract season coefficients as average selling price for time-series references.
+plot(season_price) ## see the trend of housing price across seasons
+residual <- season_price[2:length(season_price)]-season_price[-length(season_price)]
+plot(residual) ## residual plot between consequtive season
+```
+
+As we see price differences between adjecant seasons, we found strong correlation between these residuals and they tend to become unstable as the price went larger. So we descide to caulate the log of the rate of the price change and observe its residual. 
+```{r}
+price_rate <- season_price[2:length(season_price)]/season_price[-length(season_price)]
+ln_rate <- log(price_rate)
+plot(ln_rate)
+residual_ln_rate <- ln_rate[2:length(ln_rate)]-ln_rate[-length(ln_rate)]
+plot(residual_ln_rate)
+plot(residual_ln_rate[2:length(residual_ln_rate)],residual_ln_rate[-length(residual_ln_rate)])
+```
+The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time.
+So we assume the log rate difference between adjecant seasons tend to be a constant around zero. For time series model ARIMA(p,d,q), this assumption indicate we choose d = 1.
+As for p, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose p = 8 (8 seasons i.e. 2 years).
+As for q, we found the residual of log rate tend to be auto-regressive by 1 season (The third plot tend to be positive in general). We descide to choose q = 1
+The prediction model we use is ARIMA(8,1,1)
 
 ```{r}
 # the model fitting function is in another script
