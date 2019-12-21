@@ -148,7 +148,19 @@ server = function(input, output, session) {
   output$interpretation = renderUI({
     betas = as.data.frame(points()[[2]]$coefficients)
     betas$variables = rownames(betas)
-})
+    
+    # UI/HTML output
+    interpret = tags$div(tags$p(sprintf("In the %s district, when time is fixed, ", input$district)),
+                             tags$p(sprintf(" one more bathroom will increase the price per m2 by %.0f RMB;",
+                                     as.numeric(filter(betas, variables=="bathroom")[1]))),
+                             tags$p(sprintf("price of houses with elevator is %.0f RMB higher than ones without elevator;",
+                                     as.numeric(filter(betas, variables=="elevator")[1]))),
+                             tags$p(sprintf("price of houses near subway is %.0f RMB higher than ones away from subway;",
+                                     as.numeric(filter(betas, variables=="subway")[1]))),
+                             tags$p(sprintf("price of plate house type is %.0f and %.0f higher than other two respectively.",
+                                     abs(filter(betas, variables=="buildingtypePlate/Tower")[1]),
+                                     abs(filter(betas, variables=="buildingtypeTower")[1]))))
+  })
 
   # close connection to database after session ends
   session$onSessionEnded(function() {
