@@ -3,6 +3,7 @@ library(shiny)
 library(leaflet)
 library(dplyr)
 library(ggplot2)
+library(plotly)
 
 ui = fluidPage(
   fluidPage(
@@ -33,7 +34,7 @@ ui = fluidPage(
         leafletOutput("map",width = "120%", height = 700),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
-        splitLayout(plotOutput(outputId = "histogram", height = 300, width = 500),
+        splitLayout(plotlyOutput(outputId = "histogram", height = 300, width = 500),
                    plotOutput(outputId = "trendline", height = 300, width = 500)),
         splitLayout(tableOutput(outputId = "coefficient"),
                    tableOutput(outputId = "model_para")),
@@ -98,7 +99,7 @@ server = function(input, output, session) {
                  clusterOptions = markerClusterOptions())
   })
   
-  output$histogram = renderPlot({
+  output$histogram = renderPlotly({
     data_sub = points()[[1]]
     ggplot(data_sub, aes(x=totalprice)) +
       geom_histogram(bins = length(data_sub)/20)
@@ -114,7 +115,6 @@ server = function(input, output, session) {
   }, rownames = TRUE, digits =-2)
   
   output$model_para = renderTable({
-    print("render model para")
     points()[[2]]$R_Squared
   }, rownames = TRUE, digits=3)
   
