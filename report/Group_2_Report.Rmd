@@ -78,7 +78,7 @@ residual <- season_price[2:length(season_price)]-season_price[-length(season_pri
 plot(residual) ## residual plot between consecutive season
 ```
 
-As we see price differences between adjacant seasons, we found strong correlation between these residuals and they tend to become unstable as the price went larger. So we decided to calculate the log of the rate of the price change and observe its residual. 
+As we see price differences between adjacant seasons, we found strong correlation between these residuals and they tend to become unstable as the price went up. So we decided to calculate the log of the rate of the price change and observe its residual. 
 ```{r}
 price_rate <- season_price[2:length(season_price)]/season_price[-length(season_price)]
 ln_rate <- log(price_rate)
@@ -98,7 +98,7 @@ source("../Prediction_Model_Function.R")
 modeloutput = Filter_model(exampledata)
 ```
 
-
+The perdicted house price in 2018 to 2019 from the fitted ARIMA(8,1,1) is shown in the following graph:  
 ```{r}
 plots = ggplot(modeloutput$beta_data, aes(x = year, y = price , color = class)) + 
       geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') +
