@@ -19,7 +19,7 @@ In order to better explain the association between price and time, we decide to 
 
 Because we need to subset the data in a variety of ways efficiently for the shiny app to display the data from various aspects, we decide to store the data in a relational database. Because we plan to deploy our shiny app online, an online database is our desired option. We ended up using [Amazon Relational Database Service](https://aws.amazon.com/rds/). Because our data is not too large, a [free tier](https://aws.amazon.com/rds/free/) version is sufficient. The following example illustrates how we can query data from the database. For more details, please refer to our github repo.
 
-```{r, verbose=FALSE}
+```{r, results='hide'}
 # data_query_example.R gives us the handler to query data from the database
 source("../data_cleaning_storage/data_query_example.R")
 # gen_data is a function that acts as an easy api for 
@@ -67,7 +67,7 @@ season_price <- season_price + reference
 plot(season_price) ## see the trend of housing price across seasons
 ```
 
-```{r fig.height=2.8, fig.width=4}
+```{r, fig.height=2.8, fig.width=4}
 residual <- season_price[2:length(season_price)]-season_price[-length(season_price)]
 plot(residual) ## residual plot between consecutive seasons
 ```
@@ -89,7 +89,7 @@ As for $p$, we found the price tend to follow a similar pattern in about every t
 As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season. We descide to choose q = 1
 The prediction model we use is ARIMA(8,1,1).
 
-```{r, verbose=FALSE}
+```{r, results='hide'}
 # the model fitting function is in another script
 source("../Prediction_Model_Function.R")
 # the function accepts the object returned from the gen_data function.
