@@ -98,7 +98,7 @@ source("../Prediction_Model_Function.R")
 modeloutput = Filter_model(exampledata)
 ```
 
-The perdicted house price in 2018 to 2019 from the fitted ARIMA(8,1,1) is shown in the following graph:  
+The perdicted house price in 2018 to 2019 from the fitted ARIMA(8,1,1) is shown in the following price trend graph:  
 ```{r}
 plots = ggplot(modeloutput$beta_data, aes(x = year, y = price , color = class)) + 
       geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') +
