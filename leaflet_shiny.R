@@ -20,7 +20,7 @@ ui = fluidPage(
           c("all", "ChangPing","ChaoYang", "DaXing", "DongCheng", "FangShan",
             "FengTai", "HaiDian", "MenTouGou", "ShiJingShan", "ShunYi", "TongZhou",
             "XiCheng"),
-          selected = "all"
+          selected = "HaiDian"
         ),
         checkboxGroupInput(inputId = "building_type", label = "building type",
                            choices = c("Tower","Plate", "Plate/Tower"),
@@ -99,7 +99,7 @@ server = function(input, output, session) {
   })
   
   output$map = renderLeaflet({
-    leaflet() %>% setView(lng = 116.4, lat=39.9, zoom = 11) %>%
+    leaflet() %>% setView(lng = 116.4, lat=39.93, zoom = 11) %>%
       addProviderTiles(providers$OpenStreetMap.DE)
   })
   
@@ -114,20 +114,26 @@ server = function(input, output, session) {
   output$histogram = renderPlotly({
     data_sub = points()[[1]]
     ggplot(data_sub, aes(x=totalprice, fill=data_sub$district)) + 
-      geom_histogram(bins = nrow(data_sub)/50,position = "dodge") +
-      scale_color_brewer(palette = "Set3") +
-      labs( x = "Total Price", y = "Amount of Houses", title = "Histogram of Houses",
+      geom_histogram(binwidth=7,position = "dodge") +
+      scale_color_brewer(palette = "Set2") +
+      labs( x = "Total Price in CNY", y = "Amount of Houses", title = "Histogram of Houses",
             caption = "click the district name to select/deselect them") +
+      scale_fill_discrete(name = "District", labels = c("all", "ChangPing","ChaoYang", "DaXing", 
+                                                        "DongCheng", "FangShan","FengTai", "HaiDian", 
+                                                        "MenTouGou", "ShiJingShan", "ShunYi", "TongZhou","XiCheng")) +
       theme_classic()
   })
   
   output$trendline = renderPlotly({
     data_model = points()[[2]]$beta_data
     plots = ggplot(data_model, aes(x = year, y = price , color = class)) + 
-      geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
+      geom_line(size=1) + labs(x = 'Year' ,y = 'Price/m2 in CNY', title = "Price Trend + Prediction") + 
+      scale_color_brewer(palette = "Set2") + 
+      scale_x_continuous(breaks = c(2012,2014,2016,2018)) +
+      scale_fill_discrete(name = "type") +
+      theme_classic()
     ggplotly(plots)
   })
-  
   
   output$coefficient = renderTable({
     betas = points()[[2]]$coefficients
