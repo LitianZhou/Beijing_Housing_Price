@@ -4,6 +4,7 @@ library(leaflet)
 library(dplyr)
 library(ggplot2)
 library(plotly)
+library(lubridate)
 
 ui = fluidPage(
   fluidPage(
@@ -27,6 +28,9 @@ ui = fluidPage(
                            inline = FALSE),
         checkboxInput(inputId = "has_elevator", label="elevator", value = FALSE),
         checkboxInput(inputId = "has_subway", label="subway", value = FALSE),
+        dateRangeInput(inputId="trade_time_range", label="trade time range", 
+                       start = "2010-01-01", end = "2017-12-31", min="2010-01-01", max="2018-1-31", 
+                       format = "mm/dd/yy", separator="-"),
         actionButton(inputId ="resample", label = "refresh"),
         width = 2
       ),
@@ -61,7 +65,8 @@ server = function(input, output, session) {
     # filters applied to markers only
     data_sub = info$data %>% filter(elevator==as.numeric(input$has_elevator) & subway==as.numeric(input$has_subway)
                                     & totalprice >= input$price_range[1] & totalprice <= input$price_range[2]
-                                    & (square+82.69) >= input$square_range[1] & (square+82.69) <= input$square_range[2])
+                                    & (square+82.69) >= input$square_range[1] & (square+82.69) <= input$square_range[2]
+                                    & tradetime >= as.Date(input$trade_time_range[1]) & tradetime <= as.Date(input$trade_time_range[2]))
     # if(nrow(data_sub)==0) output$warning = "No house satisfy the filter"
     sample_houses = sample(1:nrow(data_sub), min(nrow(data_sub), 700))
     data_sub = data_sub[sample_houses,]
@@ -101,8 +106,9 @@ server = function(input, output, session) {
   
   output$histogram = renderPlotly({
     data_sub = points()[[1]]
-    ggplot(data_sub, aes(x=totalprice)) +
-      geom_histogram(bins = length(data_sub)/20)
+    ggplot(data_sub, aes(x=totalprice, fill=input$district)) + 
+      geom_histogram(bins = nrow(data_sub)/20, position = "dodge") +
+      scale_color_brewer(palette = "Set3")
   })
   
   output$trendline = renderPlot({
