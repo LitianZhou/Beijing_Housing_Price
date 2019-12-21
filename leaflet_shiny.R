@@ -38,8 +38,13 @@ ui = fluidPage(
         leafletOutput("map",width = "120%", height = 700),
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
+<<<<<<< HEAD
         fluidRow(plotlyOutput(outputId = "histogram", height = 300, width = 1000)),
         fluidRow(plotOutput(outputId = "trendline", height = 300, width = 1000)),
+=======
+        splitLayout(plotlyOutput(outputId = "histogram", height = 300, width = 500),
+                   plotlyOutput(outputId = "trendline", height = 300, width = 500)),
+>>>>>>> 2ef6f52ac4c628581cacba15b66d9c385e232fc2
         splitLayout(tableOutput(outputId = "coefficient"),
                    tableOutput(outputId = "model_para")),
         p("House trade data is from Lianjia.com")
@@ -119,9 +124,13 @@ server = function(input, output, session) {
       theme_classic()
   })
   
-  output$trendline = renderPlot({
-    points()[[2]]$Prediction_Plot
+  output$trendline = renderPlotly({
+    data_model = points()[[2]]$beta_data
+    plots = ggplot(data_model, aes(x = year, y = price , color = class)) + 
+      geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
+    ggplotly(plots)
   })
+  
   
   output$coefficient = renderTable({
     betas = points()[[2]]$coefficients
