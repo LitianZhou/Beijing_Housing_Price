@@ -37,6 +37,8 @@ The raw data contains 26 variables. After we remove columns that are not useful 
 | subway | Whether there is subway nearby |
 | district | The district the housing is in |
 
+In order to better explain the association between price and time, we decide to generate a new variable called `season` based on the tradetime. The `season` variable sets the first season of 2010 as 1, the second season season of 2010 as 2, etc until the first season of 2018 as 33.
+
 Because we need to subset the data in a variety of ways efficiently for the shiny app to display the data from various aspects, we decide to store the data in a relational database. Because we plan to deploy our shiny app online, an online database is our desired option. We ended up using [Amazon Relational Database Service](https://aws.amazon.com/rds/). Because our data is not too large, a [free tier](https://aws.amazon.com/rds/free/) version is sufficient. The following example illustrates how we can query data from the database. For more details, please refer to our github repo.
 
 ```{r}
@@ -55,16 +57,14 @@ library(leaps)
 #exampledata$data$season <- as.factor(exampledata$data$season)
 full_model <- lm(price ~ square + livingroom + drawingroom + kitchen + bathroom + floor + buildingtype + constructiontime + renovationcondition + buildingstructure + elevator + fiveyearsproperty + subway + season, data = exampledata$data)
 mat_full <- model.matrix(full_model)
-selection <-regsubsets(mat_full,exampledata$data$price,int = F,really.big = T,method = "exhaust", nvmax = 9)
+selection <-regsubsets(mat_full,exampledata$data$price,int = F,really.big = T,method = "exhaust", nvmax = 11)
 summary(full_model)
 summary(selection)
-coef(selection,9)
+coef(selection,11)
 plot(selection,scale = "Cp")
 ```
-As we see from the result of model selection from example data we choose `square`,`floor`,`renovationcondition`,`elevator`,`subway`,`season` since this combination gives the lowest Mallow's Cp.
 
-We actually choose similar model for the full data set with covariates 'square','bathroom','buildingtype','renovationcondition', 'district', 'elevator', 'subway' and factorized 'season'.
-We continule to factorize season to analysis the price trend.
+Based on the Mallow's Cp statistic, We choose covariates `square`,`bathroom`,`buildingtype`,`renovationcondition`, `district`, `elevator`, `subway` and `season`. To increase the model accuracy we decide to treat `season` as a factor.
 ```{r}
 exampledata$data$season <- as.factor(exampledata$data$season)
 model_select <- lm(price ~ square + bathroom + buildingtype + constructiontime + renovationcondition + elevator + subway + season, data = exampledata$data)
@@ -73,17 +73,16 @@ reference <- model_select$coefficients[1] + mean(exampledata$data$bathroom)*mode
 season_price <- season_price + reference   ##extract season coefficients as average selling price for time-series references.
 plot(season_price) ## see the trend of housing price across seasons
 residual <- season_price[2:length(season_price)]-season_price[-length(season_price)]
-plot(residual) ## residual plot between consequtive season
+plot(residual) ## residual plot between consecutive season
 ```
 
-As we see price differences between adjecant seasons, we found strong correlation between these residuals and they tend to become unstable as the price went larger. So we descide to caulate the log of the rate of the price change and observe its residual. 
+As we see price differences between adjacant seasons, we found strong correlation between these residuals and they tend to become unstable as the price went larger. So we decided to calculate the log of the rate of the price change and observe its residual. 
 ```{r}
 price_rate <- season_price[2:length(season_price)]/season_price[-length(season_price)]
 ln_rate <- log(price_rate)
 plot(ln_rate)
 residual_ln_rate <- ln_rate[2:length(ln_rate)]-ln_rate[-length(ln_rate)]
 plot(residual_ln_rate)
-plot(residual_ln_rate[2:length(residual_ln_rate)],residual_ln_rate[-length(residual_ln_rate)])
 ```
 The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time.
 So we assume the log rate difference between adjecant seasons tend to be a constant around zero. For time series model ARIMA(p,d,q), this assumption indicate we choose d = 1.
