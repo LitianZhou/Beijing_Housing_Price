@@ -67,10 +67,6 @@ server = function(input, output, session) {
     return(list(data_sub, model))
   })
   
-  # TODO: generate subset of data for histogram (based on price range and squares elevator subway)
-  
-  # TODO: generate subset of data for map(random sample)
-  
   #show a pop-up when a mark is clicked
   showHouseInfo = function(lng, lat, id){
     data_sub = points()[[1]]
@@ -104,9 +100,8 @@ server = function(input, output, session) {
   
   output$histogram = renderPlot({
     data_sub = points()[[1]]
-    # handle the elevator and subway, considering give the task to Mukai
-    ggplot(data_sub  %>% filter(elevator==0 & subway==0), aes(x=totalprice)) +
-      geom_histogram(bins = 30)
+    ggplot(data_sub, aes(x=totalprice)) +
+      geom_histogram(bins = length(data_sub)/20)
   })
   
   output$trendline = renderPlot({
