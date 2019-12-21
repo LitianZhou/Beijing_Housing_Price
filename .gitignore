@@ -7,3 +7,6 @@ house-prices-in-beijing-eda-arima.Rmd
 test.R
 price_district.Rmd
 *.csv
+report/Group_2_Report_cache
+report/Group_2_Report_files
+
