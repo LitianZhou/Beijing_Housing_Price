@@ -2,6 +2,7 @@
 # responsible for cleaning data and putting them into database
 library(tidyverse)
 library(RPostgreSQL)
+library(lubridate)
 
 # read in data
 data <- read_csv("./new.csv", locale = locale(encoding = "UTF-8")) %>%
@@ -66,8 +67,9 @@ data$constructiontime = data$constructiontime - median(data$constructiontime) # 
 data$year = year(data$tradetime)
 data = data %>% filter(year >= 2010) # only 5 observations before 2010
 data$quarter = quarter(data$tradetime)
-data = data %>% mutate(season = as.character((year - 2010) *4 + quarter))
+data = data %>% mutate(season = (year - 2010) *4 + quarter)
 
+data = data %>% filter(price > 500)
 
 
 # insert into database
@@ -83,8 +85,7 @@ pwd <- 'shinygroup2'
 con = dbConnect(pg, user=username, password='shinygroup2',
                 host=endpoint, port=5432, dbname="housing")
 
-
-dbWriteTable(con, 'housing', data, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, 'beijinghousing', data)
 
 # disconnect from database
 dbDisconnect(con)

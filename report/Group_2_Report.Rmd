@@ -44,11 +44,11 @@ Because we need to subset the data in a variety of ways efficiently for the shin
 source("../data_cleaning_storage/data_query_example.R")
 # gen_data is a function that acts as an easy api for querying data based on selected district and building type
 # gen_full_data is a similar function that return data with all covariates above to demenstrate full model.
-exampledata = gen_full_data("HaiDian", c("Tower", "Plate"))
+exampledata = gen_full_data("all", c())
 ```
 
 # Statistical Model
-As we first to descide a model to use, we tried the full model first, that fit all the covariates above excluding the total price in the linear regression model and the 'price' as the output.
+We try to see if a linear model can capture the trend between price and other covariates. To decide which covariates need to be taken into account, we started from the full model. The full model contains all the covariates listed in the table above except the total price.
 
 ```{r}
 library(leaps)
@@ -61,8 +61,9 @@ summary(selection)
 coef(selection,9)
 plot(selection,scale = "Cp")
 ```
-As we see from the result of model selection from example data we choose covarites 'square','floor','renovationcondition','elevator','subway','season' as our covarites for best mallow's Cp, which achieve a balance in baisness and estimate variance.
-We actually choose simliar model for the full data set with covariates 'square','bathroom','buildingtype','renovationcondition', 'district', 'elevator', 'subway' and factorized 'season'.
+As we see from the result of model selection from example data we choose `square`,`floor`,`renovationcondition`,`elevator`,`subway`,`season` since this combination gives the lowest Mallow's Cp.
+
+We actually choose similar model for the full data set with covariates 'square','bathroom','buildingtype','renovationcondition', 'district', 'elevator', 'subway' and factorized 'season'.
 We continule to factorize season to analysis the price trend.
 ```{r}
 exampledata$data$season <- as.factor(exampledata$data$season)
