@@ -61,7 +61,6 @@ server = function(input, output, session) {
     info = gen_data(input$district, input$building_type)
     model = Filter_model(info)
     if(length(model)<3) print(model) # model failing will return a string
-    
     # filters applied to markers only
     data_sub = info$data %>% filter(elevator==as.numeric(input$has_elevator) & subway==as.numeric(input$has_subway)
                                     & totalprice >= input$price_range[1] & totalprice <= input$price_range[2]
@@ -106,7 +105,7 @@ server = function(input, output, session) {
   
   output$histogram = renderPlotly({
     data_sub = points()[[1]]
-    ggplot(data_sub, aes(x=totalprice, fill=input$district)) + 
+    ggplot(data_sub, aes(x=totalprice, fill=data_sub$district)) + 
       geom_histogram(bins = nrow(data_sub)/20, position = "dodge") +
       scale_color_brewer(palette = "Set3")
   })
