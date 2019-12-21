@@ -39,7 +39,7 @@ ui = fluidPage(
         p(),
         textOutput(outputId = "district_filter", inline = TRUE),
         splitLayout(plotlyOutput(outputId = "histogram", height = 300, width = 500),
-                   plotOutput(outputId = "trendline", height = 300, width = 500)),
+                   plotlyOutput(outputId = "trendline", height = 300, width = 500)),
         splitLayout(tableOutput(outputId = "coefficient"),
                    tableOutput(outputId = "model_para")),
         p("House trade data is from Lianjia.com")
@@ -110,9 +110,13 @@ server = function(input, output, session) {
       scale_color_brewer(palette = "Set3")
   })
   
-  output$trendline = renderPlot({
-    points()[[2]]$Prediction_Plot
+  output$trendline = renderPlotly({
+    data_model = points()[[2]]$beta_data
+    plots = ggplot(data_model, aes(x = year, y = price , color = class)) + 
+      geom_line(size=1) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
+    ggplotly(plots)
   })
+  
   
   output$coefficient = renderTable({
     betas = points()[[2]]$coefficients

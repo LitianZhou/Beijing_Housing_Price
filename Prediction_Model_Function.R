@@ -79,7 +79,7 @@ Filter_model <- function(inquaried_data){
 
   prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + 
     geom_line(size=1.5) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
-  output <- list(coeff_info,model_stat,prediction_plot)
-  names(output) <- c("coefficients","R_Squared","Prediction_Plot")
+  output <- list(coeff_info,model_stat,beta_data)
+  names(output) <- c("coefficients","R_Squared","beta_data")
   return(output)
 }
