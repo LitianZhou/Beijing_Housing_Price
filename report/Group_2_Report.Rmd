@@ -1,7 +1,7 @@
 ---
 title: "Biostatistics 625 Final Project Report"
 author: 'Group 2 members: Mukai Wang, Kangping Yang, Litian Zhou'
-date: "December 20, 2019"
+date: "December 22, 2019"
 output: pdf_document
 ---
 
@@ -13,11 +13,11 @@ knitr::opts_chunk$set(cache = TRUE)
 Housing costs in China have witnessed turbulent fluctuation in the past few years, especially in the country’s capital Beijing. In this project, we design and implement an R shiny app that offers interactive data visualization and statistical insights about the housing price trend in Beijing. The data source is from Kaggle. It contains 300k+ transaction logs between 2011 and 2017.
 
 # Dataset Summary and Storage
-The raw data contains 26 variables. After we remove columns that are not useful (e.g. ids) and columns with too many missing values, we retain ## variables that we are interested in. For details of the variables, please refer to our codebook in the github repo. 
+The raw data contains 26 variables. After we remove columns that are not useful (e.g. ids) and columns with too many missing values, we retain 20 variables that we are interested in. For details of the variables, please refer to our codebook in the github repo. 
 
 In order to better explain the association between price and time, we decide to generate a new variable called `season` based on the tradetime. The `season` variable sets the first season of 2010 as 1, the second season season of 2010 as 2, etc until the first season of 2018 as 33.
 
-Because we need to subset the data in a variety of ways efficiently for the shiny app to display the data from various aspects, we decide to store the data in a relational database. Because we plan to deploy our shiny app online, an online database is our desired option. We ended up using [Amazon Relational Database Service](https://aws.amazon.com/rds/). Because our data is not too large, a [free tier](https://aws.amazon.com/rds/free/) version is sufficient. The following example illustrates how we can query data from the database. For more details, please refer to our github repo.
+Because we need to subset the data in a variety of ways efficiently for the shiny app to display the data from various aspects, we decide to store the data in a relational database. Because we plan to deploy our shiny app online, an online database is our desired option. We end up using [Amazon Relational Database Service](https://aws.amazon.com/rds/). Because our data is not too large, a [free tier](https://aws.amazon.com/rds/free/) version is sufficient. The following example illustrates how we can query data from the database. For more details, please refer to our github repo.
 
 ```{r, results='hide'}
 # data_query_example.R gives us the handler to query data from the database
@@ -30,8 +30,7 @@ exampledata = gen_full_data("all", c())
 ```
 
 # Statistical Model
-We try to see if a linear model can capture the trend between price and other covariates. To decide which covariates need to be taken into account, we started from the full model. The full model contains all the covariates listed in the table above except the total price.
-
+We try to see if a linear model can capture the trend between price and other covariates. To decide which covariates need to be taken into account, we start from the full model with all the covariates listed in the codebook. 
 ```{r}
 library(leaps)
 full_model <- lm(price ~ square + livingroom + drawingroom + kitchen + bathroom + floor +
@@ -72,7 +71,7 @@ residual <- season_price[2:length(season_price)]-season_price[-length(season_pri
 plot(residual) ## residual plot between consecutive seasons
 ```
 
-As we see price differences between adjacant seasons, we found strong correlation between these residuals and they tend to become unstable as the price went up. So we decided to calculate the log of the rate of the price change and observe its residual. 
+We find strong correlation in terms of price differences between adjacant seasons. They tend to become unstable as the price goes up. So we decide to calculate the log of the rate of the price change and observe its residual. 
 ```{r, fig.height=2.8, fig.width=4}
 price_rate <- season_price[2:length(season_price)]/season_price[-length(season_price)]
 ln_rate <- log(price_rate)
@@ -84,10 +83,10 @@ residual_ln_rate <- ln_rate[2:length(ln_rate)]-ln_rate[-length(ln_rate)]
 plot(residual_ln_rate)
 ```
 
-The residual plot looks better as the log rate change is more close to 0 and tend to become stable across the time. Therefore, we assume the log rate difference between adjacent seasons tend to be a constant around zero. For time series model ARIMA$(p,d,q)$, this assumption indicates d = 1.
+The residual plot looks better as the log rate change is closer to 0 and tends to become stable across the time. Therefore, we assume the log rate difference between adjacent seasons tend to be a constant around zero. For time series model ARIMA$(p,d,q)$, this assumption indicates $d$ = 1.
 As for $p$, we found the price tend to follow a similar pattern in about every two-year period. So we descide to choose $p$ = 8 (8 seasons i.e. 2 years).
-As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season. We descide to choose q = 1
-The prediction model we use is ARIMA(8,1,1).
+As for $q$, we found the residual of log rate tend to be auto-regressive by 1 season. We descide to choose $q$ = 1
+The prediction model we use is thus ARIMA(8,1,1).
 
 ```{r, results='hide'}
 # the model fitting function is in another script
@@ -139,4 +138,4 @@ All the works are done as a group, so each group member contributes to all other
 
 # Conclusion
 
-In this project, We manage to set up an R shiny app that produces interactive visualizations and statistical inference for Beijing housing prices between 2010 and 2018. 
+In this project, We manage to set up an R shiny app that produces interactive visualizations and statistical inference for Beijing housing prices between 2010 and 2018. The app can serve as a useful tool to review housing price data in the past and it can also give some predictions into the near future. All the team members enhance their technical abilities (including R Shiny, Amazon Database and time series analysis) through implementing this app. Overall the project is successful and meets the original expectation. 
