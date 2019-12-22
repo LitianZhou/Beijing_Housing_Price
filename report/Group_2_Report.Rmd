@@ -111,15 +111,31 @@ plots
 
 We integrate data visualization and statistical inference into one webpage supported by Rshiny. The interface has four panels: map & markers panel, filter panel, plots panel and statistical inference panel.
 
-Since we have more than thirty thousand house trading record, for the sake of reactivity, the map will random sampling seven hundred records which satisfies the filters.
+In the left panel, user can apply filters to the markers shown on the map, including Price Range, house area (square), district, building type, if houses are with a elevator or close to subway stations, also the trading time range. The main panel shows a map of Beijing, with no markers in the beginning. By applying the filters and hit "refresh," the map will random sampling seven hundred records which satisfies the filters for the sake of reactivity.
 
-In the left panel, user can apply filters to the markers shown on the map
+To make the map look cleaner, we cluster the nearby points into a group with the amount number on it. Users can click the cluster to expand the markers. User can also click each marker and get pop-up trade informations including price, housing area and trade time.  
 
+In the lower panel, there are two plots and statistical inference drawn from the user-specified subset. Please note that histogram uses the same filter as the left panel, while the "Price Trend + Prediction" plot uses all the data in the specified district and building type. The reason is that a wider range of records can bring better prediction and more meaningful interpretation. 
 
+![initial_interface](./initial_layout){width=45%}   ![plots]("./stat_plots"){width=50%}
 
 # Deliverable and Code Repository
 
-Link to the online app.
+Shiny App: https://biostat-umich.shinyapps.io/Beijing_Housing_Price/
+
+GitHub: https://github.com/LitianZhou/Beijing_Housing_Price
+
+# Individual Contribution
+
+### Main tasks:
+
+Shinyapp interface and visualization: Litian Zhou;
+
+Database construction, maintainance and data query: Mukai Wang;
+
+Model building and variable selection: Kangping Yang.
+
+All the works are done as a group, so each group member contributes to all other tasks as well.
 
 # Conclusion
 
