@@ -106,9 +106,10 @@ server = function(input, output, session) {
   })
   
   observe({
+    leafletProxy("map") %>% clearMarkerClusters()
+    leafletProxy("map") %>% clearMarkers()
     data_sub = points()[[1]]
     leafletProxy("map", data = data_sub) %>% 
-      clearMarkers() %>%
       addMarkers(~lng, ~lat, layerId = ~1:nrow(data_sub), 
                  clusterOptions = markerClusterOptions())
   })
