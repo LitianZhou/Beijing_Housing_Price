@@ -9,6 +9,7 @@ This project is the final class project of BIOSTAT 625 [_Computing with Big Data
 This repository contains all the codes necessary for constructing an R shiny app that offers interactive data visualization and statistical inference into a number of transactions on Beijing housing market from 2010 to 2018. For details please refer to our [project report](https://github.com/LitianZhou/Beijing_Housing_Price/blob/master/report/Group_2_Report.pdf) and our [Shiny app](https://biostat-umich.shinyapps.io/Beijing_Housing_Price/).
 
 ## Acknowledgements
+* Kaggle (Data source, [link](https://www.kaggle.com/))
 * Amazon Relational Database Service (AWS RDS, [link](https://aws.amazon.com/rds/))
 * Shiny app developed by Rstudio([link](https://shiny.rstudio.com/))
 * Leaflet map for R Shiny([link](https://rstudio.github.io/leaflet/))
