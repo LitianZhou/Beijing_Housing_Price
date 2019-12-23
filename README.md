@@ -1,4 +1,7 @@
 # Data Visualization and Statistical Inference for Beijing Housing Price
+
+<img src="https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png" align="right" width="100">
+
 ## Background
 This project is the final class project of BIOSTAT 625 [_Computing with Big Data_](https://sph.umich.edu/academics/courses/course.php?courseID=BIOSTAT625) fall 2019. This project is coauthored by Mukai Wang, Kangping Yang and Litian Zhou.
 
