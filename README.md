@@ -10,7 +10,7 @@ This repository contains all the codes necessary for constructing an R shiny app
 
 ## Acknowledgements
 * Kaggle (Data source, [link](https://www.kaggle.com/))
-* Amazon Relational Database Service (AWS RDS, [link](https://aws.amazon.com/rds/))
+* Amazon Relational Database Service ([link](https://aws.amazon.com/rds/))
 * Shiny app developed by Rstudio([link](https://shiny.rstudio.com/))
 * Leaflet map for R Shiny([link](https://rstudio.github.io/leaflet/))
 * Hui Jiang (Instructor of BIOSTAT625, Associate professor at University of Michigan Biostatistics, [link](https://sph.umich.edu/faculty-profiles/jiang-hui.html))
