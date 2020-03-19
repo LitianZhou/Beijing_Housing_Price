@@ -5,6 +5,11 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(lubridate)
+# connect to database
+source("data_cleaning_storage/data_query_example.R")
+
+# source the model building code
+source("Prediction_Model_Function.R")
 
 ui = fluidPage(
   fluidPage(
@@ -54,12 +59,6 @@ ui = fluidPage(
 
 library(htmltools)
 server = function(input, output, session) {
-  # connect to database
-  source("data_cleaning_storage/data_query_example.R")
-  
-  # source the model building code
-  source("Prediction_Model_Function.R")
-  
   # query raw data only based on district and buildingtype
   points = eventReactive(input$resample, {
     info = gen_data(input$district, input$building_type)
@@ -73,6 +72,7 @@ server = function(input, output, session) {
     # if(nrow(data_sub)==0) output$warning = "No house satisfy the filter"
     sample_houses = sample(1:nrow(data_sub), min(nrow(data_sub), 700))
     data_sub = data_sub[sample_houses,]
+    leafletProxy("map") %>% setView(lng = mean(data_sub$lng), lat=mean(data_sub$lat), zoom = 12)
     return(list(data_sub, model))
   })
   
