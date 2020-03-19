@@ -135,7 +135,7 @@ Database construction, maintainance and data query: Mukai Wang;
 
 Model building and variable selection: Kangping Yang.
 
-All the works are done as a group, so each group member contributes to all other tasks as well.
+All the works are done as a group, so each group member contributes to all orther tasks as well.
 
 # Conclusion
 
