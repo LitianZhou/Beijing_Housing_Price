@@ -7,7 +7,7 @@ Filter_model <- function(inquaried_data){
   if (inquaried_data$inference == F){ # too few observations
     return(warning("Inference Unavailable due to too small subset of houses selected"))
   }
-  if (inquaried_data$multidistrict==F && inquaried_data$multibdtype==F){# single district, single bdtype
+  if (inquaried_data$multidistrict==F && inquaried_data$multibdtype==F){ # single district, single bdtype
     model_build <- lm(price ~ square + bathroom + constructiontime + renovationcondition + elevator + subway + season, data = subdata)
     num_season <- length(table(subdata$season))
     betas <- c(0,model_build$coefficients[10:(8+num_season)]) # coefficients of seasons only
@@ -57,33 +57,21 @@ Filter_model <- function(inquaried_data){
   }else{
     predict_ln_rate <- forecast(arima(ln_rate,c(8,1,1)))
   }
-  ##lower raising speed
-  ##lower_beta <- c(beta_lower,beta_lower[length(beta_lower)]*exp(predict_ln_rate$lower[1,1]))
-  ##beta_low_rate <- lower_beta[2:length(lower_beta)]/lower_beta[-length(lower_beta)]
-  ##ln_low_rate <- log(beta_low_rate)
-  ##predict_low_rate <- forecast(arima(ln_low_rate,c(8,1,1)))
-  ##higher raising speed
-  ##higher_beta <- c(beta_upper,beta_upper[length(beta_upper)]*exp(predict_ln_rate$upper[1,1]))
-  ##beta_high_rate <- higher_beta[2:length(higher_beta)]/higher_beta[-length(higher_beta)]
-  ##ln_high_rate <- log(beta_high_rate)
-  ##predict_high_rate <- forecast(arima(ln_high_rate,c(8,1,1)))
+
   for (i in 1:8){ # predict betas for the next 2 years(8 seasons)
     beta_lower[length(beta_lower)+1] <- exp(predict_ln_rate$lower[i,1])*betas[length(betas)]
     beta_upper[length(beta_upper)+1] <- exp(predict_ln_rate$upper[i,1])*betas[length(betas)]
     betas[length(betas)+1] <- exp(predict_ln_rate$mean[i])*betas[length(betas)] # betas grow at this point
-    ##lower_beta[length(lower_beta)+1] <- exp(predict_low_rate$mean[i])*lower_beta[length(lower_beta)]
-    ##higher_beta[length(higher_beta)+1] <- exp(predict_high_rate$mean[i])*higher_beta[length(higher_beta)]
-  }
-  ##lower_beta <- lower_beta[-length(lower_beta)]
-  ##higher_beta <- higher_beta[-length(higher_beta)]
+   }
+
   beta_data <- data.frame(matrix(c(plotxaxis,(plotxaxis[length(plotxaxis)]+1):(plotxaxis[length(plotxaxis)]+8),beta_lower,beta_upper,betas),(8+num_season),4))
   names(beta_data)[2:4] <- c(" Lower Bound"," Upper Bound","(Predicted) Mean")
   beta_data <- gather(beta_data,"class","price",2:4)
   beta_data[,1] <- (beta_data[,1]-1)/4 + 2010
   names(beta_data)[1] <- "year"
-
-  prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + 
-    geom_line(size=1.5) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + scale_x_continuous(breaks = c(2012,2014,2016,2018))
+  #prediction_plot <-ggplot(beta_data) + aes(x = year, y = price , color = class, stroke = 2) + 
+  #  geom_line(size=1.5) + labs(x = 'Year' ,y = 'Price per square-meter in CNY') + 
+  #  scale_x_continuous(breaks = c(2012,2014,2016,2018))
   output <- list(coeff_info,model_stat,beta_data)
   names(output) <- c("coefficients","R_Squared","beta_data")
   return(output)

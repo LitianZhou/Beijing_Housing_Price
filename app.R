@@ -14,6 +14,8 @@ source("Prediction_Model_Function.R")
 ui = fluidPage(
   fluidPage(
     titlePanel("Beijing Second-hand House Market"),
+    textOutput("Introduction"),
+    absolutePanel("Hi"),
     sidebarLayout(
       sidebarPanel(
         sliderInput("price_range", label = h5("price range(10k)"), min = 10, 
@@ -73,7 +75,7 @@ server = function(input, output, session) {
     sample_houses = sample(1:nrow(data_sub), min(nrow(data_sub), 700))
     data_sub = data_sub[sample_houses,]
     leafletProxy("map") %>% setView(lng = mean(data_sub$lng), lat=mean(data_sub$lat), zoom = 12)
-    return(list(data_sub, model))
+    return(list(data_sub, model, input$district))
   })
   
   #show a pop-up when a mark is clicked
@@ -114,6 +116,11 @@ server = function(input, output, session) {
                  clusterOptions = markerClusterOptions())
   })
   
+  output$Introduction = renderText({
+    "To start using this app, specify filters on the left panel and hit refresh. 
+    The process may take some time when the district you select has large number of transactions."
+  })
+  
   output$histogram = renderPlotly({
     data_sub = points()[[1]]
     ggplot(data_sub, aes(x=totalprice, fill=data_sub$district)) + 
@@ -128,19 +135,42 @@ server = function(input, output, session) {
   })
   
   output$trendline = renderPlotly({
-    data_model = points()[[2]]$beta_data
+    result = points()
+    data_model = result[[2]]$beta_data
     plots = ggplot(data_model, aes(x = year, y = price , color = class)) + 
       geom_line(size=1) + labs(x = 'Year' ,y = 'Price/m2 in CNY', title = "Price Trend + Prediction") + 
       scale_color_brewer(palette = "Set2") + 
       scale_x_continuous(breaks = c(2012,2014,2016,2018)) +
       scale_fill_discrete(name = "type") +
       theme_classic()
+    if(result[[3]] == 'all') {
+      # data from https://www.anjuke.com/fangjia/beijing2018/
+      housing_price_2018 = cbind(seq(2018,2019, by=0.08333)[-1], 
+                                 c(57523,57557,57717,57829,57931,58166,58355,59376,59913,59943,59602,59868))
+      # data from https://www.anjuke.com/fangjia/beijing2019/
+      housing_price_2019 = cbind(seq(2019,2020, by=0.08333)[-1], 
+                                 c(60017,60125,60487,59993,59809,60142,60061,59888,59590,59126,58540,58568))
+      housing_price_2018_2019 = rbind(housing_price_2018, housing_price_2019)
+      colnames(housing_price_2018_2019) = c("time", "price")
+      true_price = rep(2010, length(data_model$price))
+      true_price[(length(true_price)-23):length(true_price)] = housing_price_2018_2019[,2]
+      true_x = rep(0, length(data_model$year))
+      true_x[(length(true_x)-23):length(true_x)] = housing_price_2018_2019[,1]
+
+      plots = ggplot(data_model, aes(x = year, y = price , color = class)) + 
+        geom_line(size=1) + labs(x = 'Year' ,y = 'Price/m2 in CNY', title = "Price Trend + Prediction") + 
+        geom_line(aes(x=true_x, y=true_price)) +
+        scale_color_brewer(palette = "Set2") + 
+        scale_x_continuous(breaks = c(2012,2014,2016,2018)) +
+        scale_fill_discrete(name = "type") +
+        theme_classic()
+    }
     ggplotly(plots)
   })
   
   output$coefficient = renderTable({
     betas = points()[[2]]$coefficients
-  }, rownames = TRUE, digits =-2)
+  }, rownames = TRUE)
   
   output$model_para = renderTable({
     points()[[2]]$R_Squared
@@ -152,16 +182,17 @@ server = function(input, output, session) {
     
     # UI/HTML output
     interpret = tags$div(tags$p(sprintf("In the %s district, when time is fixed, ", input$district)),
-                             tags$p(sprintf(" one more bathroom will increase the price per m2 by %.0f RMB;",
+                             tags$p(sprintf("One more bathroom will increase the price per m2 by %.0f RMB;",
                                      as.numeric(filter(betas, variables=="bathroom")[1]))),
-                             tags$p(sprintf("price of houses with elevator is %.0f RMB higher than ones without elevator;",
+                             tags$p(sprintf("Price of houses with elevator is %.0f RMB higher than ones without elevator;",
                                      as.numeric(filter(betas, variables=="elevator")[1]))),
-                             tags$p(sprintf("price of houses near subway is %.0f RMB higher than ones away from subway;",
+                             tags$p(sprintf("Price of houses near subway is %.0f RMB higher than ones away from subway;",
                                      as.numeric(filter(betas, variables=="subway")[1]))),
-                             tags$p(sprintf("price of plate house type is %.0f and %.0f higher than other two respectively.",
+                             tags$p(sprintf("Price of plate house type is %.0f and %.0f higher than other two respectively.",
                                      abs(filter(betas, variables=="buildingtypePlate/Tower")[1]),
                                      abs(filter(betas, variables=="buildingtypeTower")[1]))))
   })
+
 
   # close connection to database after session ends
   session$onSessionEnded(function() {

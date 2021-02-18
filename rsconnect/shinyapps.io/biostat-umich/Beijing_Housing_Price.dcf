@@ -5,8 +5,8 @@ account: biostat-umich
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1615377
-bundleId: 2685832
+bundleId: 3042073
 url: https://biostat-umich.shinyapps.io/Beijing_Housing_Price/
-when: 1576974678.04482
+when: 1587439204.40208
 asMultiple: FALSE
 asStatic: FALSE
