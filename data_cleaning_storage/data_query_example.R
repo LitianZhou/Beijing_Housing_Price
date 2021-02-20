@@ -1,18 +1,22 @@
 ### Illustrate examples of connecting to/ close connection and query
 
 library(RPostgreSQL)
-
+library(DBI)
 # parameters for connecting to database
 pg = dbDriver("PostgreSQL")
 
-endpoint <- 'beijing-housing.copmdh9kwiqr.us-east-2.rds.amazonaws.com'
+endpoint <- 'shinystandard.cpjmvej4z4fe.us-west-2.rds.amazonaws.com'
 portnum <- 5432
-username <- 'biostat625'
-pwd <- 'shinygroup2'
+username <- 'zlt'
+pwd <- 'Zhousky123'
 
 # set up connection object
-con = dbConnect(pg, user=username, password=pwd,
-                host=endpoint, port=portnum, dbname='housing')
+con = dbConnect(pg,
+                user='postgres', 
+                password=pwd,
+                host='shinystandard.cpjmvej4z4fe.us-west-2.rds.amazonaws.com', 
+                port=portnum,
+                dbname = 'fuckaws')
 
 gen_data = function(district, bdtypes){
   querystring = "SELECT price, totalprice, square, bathroom, buildingtype, constructiontime, renovationcondition, 

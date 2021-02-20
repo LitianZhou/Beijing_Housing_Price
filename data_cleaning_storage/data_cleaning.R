@@ -75,16 +75,17 @@ data = data %>% filter(price > 500)
 # insert into database
 pg = dbDriver("PostgreSQL")
 
-endpoint <- 'beijing-housing.copmdh9kwiqr.us-east-2.rds.amazonaws.com'
+endpoint <- 'shinystandard.cpjmvej4z4fe.us-west-2.rds.amazonaws.com'
 portnum <- 5432
-username <- 'biostat625'
-dbname <- 'housing'
-pwd <- 'shinygroup2'
+username <- 'postgres'
+dbname <- 'fuckaws'
+pwd <- 'Zhousky123'
 
 # connect to database
-con = dbConnect(pg, user=username, password='shinygroup2',
-                host=endpoint, port=5432, dbname="housing")
+con = dbConnect(pg, user=username, password=pwd,
+                host=endpoint, port=portnum, dbname=dbname)
 
+# dbWriteTable(con, dbname, data)
 dbWriteTable(con, 'beijinghousing', data)
 
 # disconnect from database
